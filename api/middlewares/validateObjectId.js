@@ -1,23 +1,24 @@
 import mongoose from "mongoose";
 import HttpError from "../utils/HttpError.js";
 
-const validateObjectId = (
-  req,
-  res,
-  next
-) => {
-  if (
-    !mongoose.isValidObjectId(req.params.id)
-  ) {
-    return next(
-      new HttpError(
-        400,
-        "Invalid resource ID."
-      )
-    );
-  }
+export const validateObjectIdParam = (paramName) => {
+  return (req, res, next) => {
+    const value = req.params[paramName];
 
-  next();
+    if (!mongoose.isValidObjectId(value)) {
+      return next(
+        new HttpError(
+          400,
+          `Invalid ${paramName}.`
+        )
+      );
+    }
+
+    next();
+  };
 };
+
+const validateObjectId =
+  validateObjectIdParam("id");
 
 export default validateObjectId;

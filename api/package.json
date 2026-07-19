@@ -8,7 +8,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "seed:admin": "node utils/createAdmin.js",
-    "seed:courses": "node utils/seedCourses.js"
+    "seed:courses": "node utils/seedCourses.js",
+    "setup:gdrive": "node utils/setupGoogleDrive.js"
   },
   "keywords": [],
   "author": "",
@@ -21,10 +22,13 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.0",
+    "googleapis": "^173.0.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "luxon": "^3.7.2",
     "mongoose": "^9.7.4",
     "morgan": "^1.11.0",
+    "multer": "^2.2.0",
     "nodemailer": "^9.0.3"
   },
   "devDependencies": {

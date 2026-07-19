@@ -12,6 +12,9 @@ import HttpError from "./utils/HttpError.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
+import billingPeriodRoutes from "./routes/billingPeriodRoutes.js";
+import enrollmentRoutes from "./routes/enrollmentRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 import verifyRequestOrigin from "./middlewares/originMiddleware.js";
 import { apiLimiter } from "./middlewares/rateLimiters.js";
@@ -78,6 +81,14 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/courses", courseRoutes);
+app.use(
+  "/api/billing-periods",
+  billingPeriodRoutes
+);
+
+app.use("/api/enrollments", enrollmentRoutes);
+
+app.use("/api/payments", paymentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
