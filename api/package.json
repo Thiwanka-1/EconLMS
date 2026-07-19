@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "seed:admin": "node utils/createAdmin.js"
+    "seed:admin": "node utils/createAdmin.js",
+    "seed:courses": "node utils/seedCourses.js"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +24,8 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.4",
-    "morgan": "^1.11.0"
+    "morgan": "^1.11.0",
+    "nodemailer": "^9.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
