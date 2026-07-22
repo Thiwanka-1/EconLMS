@@ -3,6 +3,9 @@ import PaymentSubmission from "../models/PaymentSubmission.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
+import {
+  registerStudentForEligibleLiveClasses,
+} from "../services/zoomRegistrationService.js";
 
 import {
   getDriveFileStream,
@@ -337,12 +340,48 @@ export const approvePayment =
 
     await payment.save();
 
-    res.status(200).json({
+    //new zoom logic
+    let zoomRegistrationSync = null;
+
+try {
+  zoomRegistrationSync =
+    await registerStudentForEligibleLiveClasses(
+      {
+        studentId:
+          payment.student,
+
+        courseId:
+          payment.course,
+
+        billingPeriodId:
+          payment.paymentPlan ===
+          "monthly"
+            ? payment.billingPeriod
+            : null,
+      }
+    );
+} catch (error) {
+  console.error(
+    "Zoom registration sync failed after payment approval:",
+    error.message
+  );
+
+  zoomRegistrationSync = {
+    success: false,
+    error: error.message,
+  };
+}
+
+   res.status(200).json({
       success: true,
+
       message:
         "Payment approved and course access granted.",
+
       paymentSubmission: payment,
       enrollment,
+
+      zoomRegistrationSync,
     });
   });
 
