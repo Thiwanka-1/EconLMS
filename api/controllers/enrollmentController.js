@@ -535,3 +535,96 @@ export const setEnrollmentStatus =
       enrollment,
     });
   });
+
+  export const getMyCourseAccess =
+  asyncHandler(async (req, res) => {
+    const course = await Course.findById(
+      req.params.courseId
+    );
+
+    if (
+      !course ||
+      !course.isPublished ||
+      course.isArchived
+    ) {
+      throw new HttpError(
+        404,
+        "Course not found."
+      );
+    }
+
+    const enrollment =
+      await Enrollment.findOne({
+        student: req.user._id,
+        course: course._id,
+      });
+
+    if (!enrollment) {
+      return res.status(200).json({
+        success: true,
+        hasAccess: false,
+        reason:
+          "You are not enrolled in this course.",
+        enrollmentStatus: "not_enrolled",
+        requiredBillingPeriod: null,
+      });
+    }
+
+    if (enrollment.status !== "active") {
+      return res.status(200).json({
+        success: true,
+        hasAccess: false,
+        reason: `Enrollment status is ${enrollment.status}.`,
+        enrollmentStatus:
+          enrollment.status,
+        requiredBillingPeriod: null,
+      });
+    }
+
+    if (
+      course.paymentPlan === "one_time"
+    ) {
+      const hasAccess = Boolean(
+        enrollment.oneTimeAccessGrantedAt
+      );
+
+      return res.status(200).json({
+        success: true,
+        hasAccess,
+        reason: hasAccess
+          ? "One-time course access is active."
+          : "One-time payment has not been approved.",
+        enrollmentStatus:
+          enrollment.status,
+        requiredBillingPeriod: null,
+      });
+    }
+
+    const currentBillingPeriod =
+      await getOrCreateCurrentBillingPeriod(
+        course
+      );
+
+    const hasCurrentMonthApproval =
+      enrollment.approvedBillingPeriods.some(
+        (periodId) =>
+          periodId.toString() ===
+          currentBillingPeriod._id.toString()
+      );
+
+    res.status(200).json({
+      success: true,
+      hasAccess:
+        hasCurrentMonthApproval,
+
+      reason: hasCurrentMonthApproval
+        ? `Access approved for ${currentBillingPeriod.label}.`
+        : `Payment approval is required for ${currentBillingPeriod.label}.`,
+
+      enrollmentStatus:
+        enrollment.status,
+
+      requiredBillingPeriod:
+        currentBillingPeriod,
+    });
+  });

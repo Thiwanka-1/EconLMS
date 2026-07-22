@@ -9,6 +9,20 @@ import mongoose from "mongoose";
 import connectDB from "./utils/connectDB.js";
 import HttpError from "./utils/HttpError.js";
 
+// Import scheduled jobs for automatic billing period generation
+import {
+  runBillingGenerationOnStartup,
+  scheduleMonthlyBillingGeneration,
+  shutdownScheduledJobs,
+  triggerMonthlyBillingGenerationNow,
+} from "./utils/scheduledJobs.js";
+
+import {
+  authorize,
+  protect,
+} from "./middlewares/authMiddleware.js";
+
+import asyncHandler from "./utils/asyncHandler.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
@@ -78,6 +92,31 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+/**
+ * TEST ENDPOINT: Trigger monthly billing period generation manually
+ * This endpoint is useful for testing the billing generation logic without waiting for the scheduled time.
+ * Only enable in development/staging environments for testing purposes.
+ *
+ * Usage: POST /api/admin/trigger-billing-generation
+ * (In a real system, this should be protected with proper authentication/authorization)
+ */
+app.post(
+  "/api/admin/trigger-billing-generation",
+  protect,
+  authorize("admin"),
+  asyncHandler(async (req, res) => {
+    const result =
+      await triggerMonthlyBillingGenerationNow();
+
+    res.status(200).json({
+      success: result.success,
+      message:
+        "Billing-period generation completed.",
+      data: result,
+    });
+  })
+);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/courses", courseRoutes);
@@ -94,31 +133,77 @@ app.use(notFound);
 app.use(errorHandler);
 
 let server;
+let monthlyBillingJob;
 
 const startServer = async () => {
   try {
     await connectDB();
 
+    /*
+     * Catch-up execution:
+     * If the server was offline at 00:01 on the
+     * first day, this creates any missing period.
+     *
+     * Running it repeatedly is safe because the
+     * database upsert prevents duplicates.
+     */
+    try {
+      await runBillingGenerationOnStartup();
+    } catch (error) {
+      console.error(
+        "[SCHEDULER] Startup billing generation failed:",
+        error.message
+      );
+    }
+
+    try {
+      monthlyBillingJob =
+        scheduleMonthlyBillingGeneration();
+    } catch (error) {
+      console.error(
+        "[SCHEDULER] Scheduled job initialization failed:",
+        error.message
+      );
+    }
+
     server = app.listen(port, () => {
-      console.log(`EconLLS API running on port ${port}`);
+      console.log(
+        `EconLLS API running on port ${port}`
+      );
     });
   } catch (error) {
-    console.error("Server startup failed:", error);
+    console.error(
+      "Server startup failed:",
+      error
+    );
+
     process.exit(1);
   }
 };
 
 const shutdown = async (signal) => {
-  console.log(`${signal} received. Shutting down...`);
+  console.log(
+    `${signal} received. Shutting down...`
+  );
 
-  if (server) {
-    server.close(async () => {
-      await mongoose.connection.close();
-      process.exit(0);
-    });
-  } else {
+  try {
+    await shutdownScheduledJobs();
+  } catch (error) {
+    console.error(
+      "Scheduled-job shutdown failed:",
+      error.message
+    );
+  }
+
+  const closeDatabase = async () => {
     await mongoose.connection.close();
     process.exit(0);
+  };
+
+  if (server) {
+    server.close(closeDatabase);
+  } else {
+    await closeDatabase();
   }
 };
 

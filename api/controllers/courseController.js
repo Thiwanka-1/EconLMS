@@ -4,6 +4,9 @@ import Course from "../models/Course.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
 import slugify from "../utils/slugify.js";
+import {
+  getOrCreateCurrentBillingPeriod,
+} from "../utils/billingPeriod.js";
 
 const allowedCategories = [
   "grade",
@@ -214,6 +217,24 @@ export const createCourse = asyncHandler(
       createdBy: req.user._id,
       updatedBy: req.user._id,
     });
+
+    let currentBillingPeriod = null;
+
+    if (
+      course.paymentPlan === "monthly" &&
+      course.isPublished &&
+      !course.isArchived
+    ) {
+      try {
+        currentBillingPeriod =
+          await getOrCreateCurrentBillingPeriod(course);
+      } catch (error) {
+        console.error(
+          `Failed to create billing period for course ${course._id}:`,
+          error.message
+        );
+      }
+    }
 
     res.status(201).json({
       success: true,

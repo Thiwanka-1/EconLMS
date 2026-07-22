@@ -3,6 +3,7 @@ import express from "express";
 import {
   getAllEnrollmentsAdmin,
   getMyCourseEnrollment,
+  getMyCourseAccess,
   getMyEnrollments,
   setEnrollmentStatus,
   submitPaymentSlip,
@@ -57,6 +58,13 @@ router.patch(
   authorize("admin"),
   validateObjectIdParam("id"),
   setEnrollmentStatus
+);
+
+router.get(
+  "/my/:courseId/access",
+  authorize("student"),
+  validateObjectIdParam("courseId"),
+  getMyCourseAccess
 );
 
 export default router;
