@@ -1,13 +1,21 @@
 import "dotenv/config";
+
 import {
   getOrCreateDriveFolder,
 } from "./googleDrive.js";
 
 const setupGoogleDrive = async () => {
   try {
-    const folder =
+    const paymentFolder =
       await getOrCreateDriveFolder({
-        name: "EconLLS Payment Slips",
+        name:
+          "EconLLS Payment Slips",
+      });
+
+    const nicFolder =
+      await getOrCreateDriveFolder({
+        name:
+          "EconLLS NIC Documents",
       });
 
     console.log(
@@ -15,19 +23,15 @@ const setupGoogleDrive = async () => {
     );
 
     console.log(
-      `Folder name: ${folder.name}`
+      "\nAdd or update these values in .env:\n"
     );
 
     console.log(
-      `Folder ID: ${folder.id}`
+      `GDRIVE_PAYMENT_SLIPS_FOLDER_ID=${paymentFolder.id}`
     );
 
     console.log(
-      "\nAdd this to your .env:"
-    );
-
-    console.log(
-      `GDRIVE_PAYMENT_SLIPS_FOLDER_ID=${folder.id}`
+      `GDRIVE_NIC_DOCUMENTS_FOLDER_ID=${nicFolder.id}`
     );
   } catch (error) {
     console.error(

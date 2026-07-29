@@ -32,6 +32,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import lessonRoutes from "./routes/lessonRoutes.js";
 import playbackRoutes from "./routes/playbackRoutes.js";
 import liveClassRoutes from "./routes/liveClassRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
 
 import verifyRequestOrigin from "./middlewares/originMiddleware.js";
 import { apiLimiter } from "./middlewares/rateLimiters.js";
@@ -134,6 +135,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/playback", playbackRoutes);
 app.use("/api/live-classes", liveClassRoutes);
+app.use("/api/documents", documentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

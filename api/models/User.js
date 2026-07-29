@@ -90,6 +90,65 @@ const userSchema = new mongoose.Schema(
     nicImageFileId: {
       type: String,
       default: null,
+      select: false,
+    },
+
+    nicImageOriginalName: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    nicImageStoredName: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    nicImageMimeType: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    nicImageSizeBytes: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+
+    nicImageUploadedAt: {
+      type: Date,
+      default: null,
+    },
+
+    nicVerificationStatus: {
+      type: String,
+      enum: [
+        "not_uploaded",
+        "pending",
+        "verified",
+        "rejected",
+      ],
+      default: "not_uploaded",
+    },
+
+    nicVerificationNote: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 1000,
+    },
+
+    nicVerifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    nicVerifiedAt: {
+      type: Date,
+      default: null,
     },
 
     role: {
@@ -113,10 +172,10 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     emailVerificationOtpHash: {
-  type: String,
-  select: false,
-  default: null,
-},
+      type: String,
+      select: false,
+      default: null,
+    },
 
 emailVerificationOtpExpiresAt: {
   type: Date,
@@ -162,21 +221,22 @@ authVersion: {
     timestamps: true,
 
     toJSON: {
-  transform: (_, returnedObject) => {
-    delete returnedObject.password;
-    delete returnedObject.__v;
+      transform: (_, returnedObject) => {
+        delete returnedObject.password;
+        delete returnedObject.__v;
+        delete returnedObject.nicImageFileId;
 
-    delete returnedObject.emailVerificationOtpHash;
-    delete returnedObject.emailVerificationOtpExpiresAt;
-    delete returnedObject.emailVerificationOtpSentAt;
+        delete returnedObject.emailVerificationOtpHash;
+        delete returnedObject.emailVerificationOtpExpiresAt;
+        delete returnedObject.emailVerificationOtpSentAt;
 
-    delete returnedObject.passwordResetOtpHash;
-    delete returnedObject.passwordResetOtpExpiresAt;
-    delete returnedObject.passwordResetOtpSentAt;
+        delete returnedObject.passwordResetOtpHash;
+        delete returnedObject.passwordResetOtpExpiresAt;
+        delete returnedObject.passwordResetOtpSentAt;
 
-    return returnedObject;
-  },
-},
+        return returnedObject;
+      },
+    },
   }
 );
 

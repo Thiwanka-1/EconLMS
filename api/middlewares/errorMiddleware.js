@@ -25,30 +25,32 @@ export const errorHandler = (
     error.message ||
     "Internal server error.";
 
-  if (
-    error.name === "MulterError"
-  ) {
-    statusCode = 400;
+  if (error.name === "MulterError") {
+  statusCode = 400;
 
-    if (
-      error.code ===
-      "LIMIT_FILE_SIZE"
-    ) {
-      message = `Payment slip must not exceed ${
-        process.env
-          .PAYMENT_SLIP_MAX_MB || 5
-      } MB.`;
-    } else if (
-      error.code ===
-      "LIMIT_UNEXPECTED_FILE"
-    ) {
-      message =
-        'The upload field must be named "slip".';
-    } else {
-      message =
-        "Payment-slip upload failed.";
-    }
+  if (
+    error.code ===
+    "LIMIT_FILE_SIZE"
+  ) {
+    message =
+      "The uploaded file exceeds the allowed size.";
+  } else if (
+    error.code ===
+    "LIMIT_FILE_COUNT"
+  ) {
+    message =
+      "Only one file can be uploaded.";
+  } else if (
+    error.code ===
+    "LIMIT_UNEXPECTED_FILE"
+  ) {
+    message =
+      'Unexpected upload field. Use "slip" for payment slips or "nicImage" for NIC images.';
+  } else {
+    message =
+      "The file upload failed.";
   }
+}
 
   if (error.code === 11000) {
     const duplicatedField =

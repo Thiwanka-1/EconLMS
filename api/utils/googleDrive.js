@@ -131,10 +131,11 @@ export const getOrCreateDriveFolder =
 
 const getExtensionForFile = (file) => {
   const mimeExtensions = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "application/pdf": ".pdf",
-  };
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "application/pdf": ".pdf",
+};
 
   return (
     mimeExtensions[file.mimetype] ||
@@ -230,6 +231,81 @@ export const uploadPaymentSlipToDrive =
       parentFolderId: studentFolder.id,
     };
   };
+
+export const uploadNicImageToDrive =
+  async ({
+    file,
+    student,
+  }) => {
+    const rootFolderId =
+      process.env
+        .GDRIVE_NIC_DOCUMENTS_FOLDER_ID;
+
+    if (!rootFolderId) {
+      throw new Error(
+        "GDRIVE_NIC_DOCUMENTS_FOLDER_ID is missing."
+      );
+    }
+
+    const studentFolder =
+      await getOrCreateDriveFolder({
+        name: `student-${student._id}`,
+        parentId: rootFolderId,
+      });
+
+    const extension =
+      getExtensionForFile(file);
+
+    const fileName = sanitizeFileName(
+      [
+        "nic",
+        student._id,
+        Date.now(),
+        randomUUID(),
+      ].join("-") + extension
+    );
+
+    const drive = getDriveClient();
+
+    const uploadResponse =
+      await drive.files.create({
+        requestBody: {
+          name: fileName,
+
+          parents: [
+            studentFolder.id,
+          ],
+
+          description: [
+            "EconLLS NIC document",
+            `Student ID: ${student._id}`,
+            `Student email: ${student.email}`,
+            `Uploaded: ${new Date().toISOString()}`,
+          ].join("\n"),
+        },
+
+        media: {
+          mimeType: file.mimetype,
+          body: Readable.from(
+            file.buffer
+          ),
+        },
+
+        fields: [
+          "id",
+          "name",
+          "mimeType",
+          "size",
+          "createdTime",
+        ].join(","),
+      });
+
+    return {
+      ...uploadResponse.data,
+      parentFolderId:
+        studentFolder.id,
+    };
+  };  
 
 export const getDriveFileStream =
   async (fileId) => {
