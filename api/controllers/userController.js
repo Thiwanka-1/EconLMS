@@ -1,4 +1,6 @@
 import User from "../models/User.js";
+import ZoomRegistration from "../models/ZoomRegistration.js";
+
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
 
@@ -8,6 +10,62 @@ const escapeRegExp = (value) => {
 
 const isSameUser = (requestUser, requestedUserId) => {
   return requestUser._id.toString() === requestedUserId;
+};
+
+const studentEditableFields = [
+  "firstName",
+  "lastName",
+  "school",
+  "mobileNumber",
+  "city",
+  "address",
+  "zoomEmail",
+];
+
+const adminEditableFields = [
+  ...studentEditableFields,
+  "email",
+  "nicNumber",
+];
+
+const protectedUserFields = new Set([
+  "password",
+  "role",
+  "isActive",
+  "isEmailVerified",
+  "authVersion",
+  "emailVerificationOtpHash",
+  "emailVerificationOtpExpiresAt",
+  "emailVerificationOtpSentAt",
+  "passwordResetOtpHash",
+  "passwordResetOtpExpiresAt",
+  "passwordResetOtpSentAt",
+]);
+
+const normalizeEmail = (value) => {
+  return String(value || "").trim().toLowerCase();
+};
+
+const normalizeNicNumber = (value) => {
+  return String(value || "").trim().toUpperCase();
+};
+
+const ensureAnotherActiveAdminExists = async (user) => {
+  if (user.role !== "admin" || !user.isActive) {
+    return;
+  }
+
+  const activeAdminCount = await User.countDocuments({
+    role: "admin",
+    isActive: true,
+  });
+
+  if (activeAdminCount <= 1) {
+    throw new HttpError(
+      409,
+      "The final active administrator account cannot be disabled."
+    );
+  }
 };
 
 export const getAllUsers = asyncHandler(async (req, res) => {
@@ -52,6 +110,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit),
+
     User.countDocuments(filter),
   ]);
 
@@ -72,7 +131,10 @@ export const getUserById = asyncHandler(async (req, res) => {
   const isAdmin = req.user.role === "admin";
 
   if (!requestingOwnAccount && !isAdmin) {
-    throw new HttpError(403, "You cannot view another student's information.");
+    throw new HttpError(
+      403,
+      "You cannot view another student's information."
+    );
   }
 
   const user = await User.findById(req.params.id);
@@ -90,59 +152,161 @@ export const getUserById = asyncHandler(async (req, res) => {
 export const updateUser = asyncHandler(async (req, res) => {
   const requestingOwnAccount = isSameUser(req.user, req.params.id);
   const isAdmin = req.user.role === "admin";
+  const body = req.body || {};
 
   if (!requestingOwnAccount && !isAdmin) {
-    throw new HttpError(403, "You cannot update another student's account.");
+    throw new HttpError(
+      403,
+      "You cannot update another student's account."
+    );
   }
 
-  const user = await User.findById(req.params.id);
+  const protectedField = Object.keys(body).find((field) =>
+    protectedUserFields.has(field)
+  );
+
+  if (protectedField) {
+    throw new HttpError(
+      400,
+      `${protectedField} cannot be changed through this endpoint.`
+    );
+  }
+
+  if (!isAdmin && (body.email !== undefined || body.nicNumber !== undefined)) {
+    throw new HttpError(
+      403,
+      "Students cannot change their email address or NIC number through this endpoint."
+    );
+  }
+
+  const user = await User.findById(req.params.id).select("+nicImageFileId");
 
   if (!user) {
     throw new HttpError(404, "User not found.");
   }
 
-  const studentEditableFields = [
-    "firstName",
-    "lastName",
-    "school",
-    "mobileNumber",
-    "city",
-    "address",
-    "zoomEmail",
-  ];
+  const originalEmail = normalizeEmail(user.email);
+  const originalNicNumber = normalizeNicNumber(user.nicNumber);
+  const originalZoomEmail = normalizeEmail(user.zoomEmail);
 
-  const adminEditableFields = [
-    ...studentEditableFields,
-    "email",
-    "nicNumber",
-    "role",
-    "isActive",
-    "isEmailVerified",
-  ];
+  const requestedEmail =
+    body.email !== undefined
+      ? normalizeEmail(body.email)
+      : originalEmail;
+
+  const requestedNicNumber =
+    body.nicNumber !== undefined
+      ? normalizeNicNumber(body.nicNumber)
+      : originalNicNumber;
+
+  const requestedZoomEmail =
+    body.zoomEmail !== undefined
+      ? normalizeEmail(body.zoomEmail)
+      : originalZoomEmail;
+
+  const emailChanged = requestedEmail !== originalEmail;
+  const nicNumberChanged =
+    requestedNicNumber !== originalNicNumber;
+  const zoomEmailChanged =
+    requestedZoomEmail !== originalZoomEmail;
+
+  if (
+    requestingOwnAccount &&
+    user.role === "admin" &&
+    emailChanged
+  ) {
+    throw new HttpError(
+      400,
+      "An administrator cannot change their own email address through this endpoint."
+    );
+  }
+
+  if (zoomEmailChanged) {
+    const hasRegisteredZoomClass =
+      await ZoomRegistration.exists({
+        student: user._id,
+        status: "registered",
+      });
+
+    if (hasRegisteredZoomClass) {
+      throw new HttpError(
+        409,
+        "The Zoom email cannot be changed while registered live classes exist. Contact an administrator."
+      );
+    }
+  }
 
   const allowedFields = isAdmin
     ? adminEditableFields
     : studentEditableFields;
 
   for (const field of allowedFields) {
-    if (req.body[field] !== undefined) {
-      user[field] = req.body[field];
+    if (body[field] !== undefined) {
+      user[field] = body[field];
     }
   }
 
-  if (req.body.email !== undefined && isAdmin) {
-    user.email = String(req.body.email).trim().toLowerCase();
+  if (body.email !== undefined && isAdmin) {
+    user.email = requestedEmail;
   }
 
-  if (req.body.nicNumber !== undefined && isAdmin) {
-    user.nicNumber = String(req.body.nicNumber).trim().toUpperCase();
+  if (body.nicNumber !== undefined && isAdmin) {
+    user.nicNumber = requestedNicNumber;
   }
 
-  /*
-   * Password changes are deliberately excluded.
-   * They will use dedicated change-password and forgot-password endpoints.
-   */
+  if (body.zoomEmail !== undefined) {
+    user.zoomEmail = requestedZoomEmail;
+  }
+
+  if (emailChanged) {
+    user.isEmailVerified = false;
+    user.emailVerificationOtpHash = null;
+    user.emailVerificationOtpExpiresAt = null;
+    user.emailVerificationOtpSentAt = null;
+    user.passwordResetOtpHash = null;
+    user.passwordResetOtpExpiresAt = null;
+    user.passwordResetOtpSentAt = null;
+    user.authVersion += 1;
+  }
+
+  if (nicNumberChanged) {
+    user.nicVerificationStatus = user.nicImageFileId
+      ? "pending"
+      : "not_uploaded";
+
+    user.nicVerificationNote = "";
+    user.nicVerifiedBy = null;
+    user.nicVerifiedAt = null;
+    user.nicReviewedAt = null;
+  }
+
   await user.save();
+
+  if (zoomEmailChanged) {
+    try {
+      await ZoomRegistration.updateMany(
+        {
+          student: user._id,
+          status: {
+            $in: ["pending", "failed"],
+          },
+        },
+        {
+          $set: {
+            zoomEmail: user.zoomEmail,
+            lastError: "",
+            attempts: 0,
+            lastAttemptAt: null,
+          },
+        }
+      );
+    } catch (error) {
+      console.error(
+        "Failed to synchronize pending Zoom registration emails:",
+        error.message
+      );
+    }
+  }
 
   res.status(200).json({
     success: true,
@@ -155,11 +319,20 @@ export const setUserStatus = asyncHandler(async (req, res) => {
   const { isActive } = req.body;
 
   if (typeof isActive !== "boolean") {
-    throw new HttpError(400, "isActive must be either true or false.");
+    throw new HttpError(
+      400,
+      "isActive must be either true or false."
+    );
   }
 
-  if (isSameUser(req.user, req.params.id) && isActive === false) {
-    throw new HttpError(400, "You cannot disable your own administrator account.");
+  if (
+    isSameUser(req.user, req.params.id) &&
+    isActive === false
+  ) {
+    throw new HttpError(
+      400,
+      "You cannot disable your own administrator account."
+    );
   }
 
   const user = await User.findById(req.params.id);
@@ -168,8 +341,22 @@ export const setUserStatus = asyncHandler(async (req, res) => {
     throw new HttpError(404, "User not found.");
   }
 
-  user.isActive = isActive;
-  await user.save();
+  if (!isActive) {
+    await ensureAnotherActiveAdminExists(user);
+  }
+
+  if (user.isActive !== isActive) {
+    user.isActive = isActive;
+
+    /*
+     * Revokes every existing cookie for this user.
+     * Old tokens remain invalid even if the account
+     * is enabled again later.
+     */
+    user.authVersion += 1;
+
+    await user.save();
+  }
 
   res.status(200).json({
     success: true,
@@ -181,20 +368,8 @@ export const setUserStatus = asyncHandler(async (req, res) => {
 });
 
 export const deleteUser = asyncHandler(async (req, res) => {
-  if (isSameUser(req.user, req.params.id)) {
-    throw new HttpError(400, "You cannot delete your own administrator account.");
-  }
-
-  const user = await User.findById(req.params.id);
-
-  if (!user) {
-    throw new HttpError(404, "User not found.");
-  }
-
-  await user.deleteOne();
-
-  res.status(200).json({
-    success: true,
-    message: "User deleted successfully.",
-  });
+  throw new HttpError(
+    405,
+    "Permanent user deletion is disabled. Deactivate the account instead."
+  );
 });

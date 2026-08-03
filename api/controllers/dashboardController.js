@@ -17,6 +17,9 @@ import {
   checkStudentLiveClassAccess,
 } from "../services/zoomRegistrationService.js";
 
+const studentNotificationFields =
+  "recipient type title message actionUrl data isRead readAt createdAt updatedAt";
+
 const createStatusMap = (
   rows,
   knownStatuses = []
@@ -505,9 +508,7 @@ export const getStudentDashboard =
       Notification.find({
         recipient: studentId,
       })
-        .select(
-          "-emailDelivery.error"
-        )
+        .select(studentNotificationFields)
         .sort({
           createdAt: -1,
         })

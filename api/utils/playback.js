@@ -1,14 +1,16 @@
 import LessonView from "../models/LessonView.js";
 
-export const getPlaybackStaleMilliseconds =
-  () => {
-    const staleMinutes = Number(
-      process.env.PLAYBACK_STALE_MINUTES ||
-        3
-    );
+export const getPlaybackStaleMilliseconds = () => {
+  const staleMinutes = Number(
+    process.env.PLAYBACK_STALE_MINUTES || 3
+  );
 
-    return staleMinutes * 60 * 1000;
-  };
+  if (!Number.isFinite(staleMinutes) || staleMinutes <= 0) {
+    return 3 * 60 * 1000;
+  }
+
+  return staleMinutes * 60 * 1000;
+};
 
 export const isPlaybackSessionStale = (
   activeSession
@@ -175,24 +177,11 @@ export const getLessonViewSummary = ({
   lesson,
   lessonView,
 }) => {
-  const baseLimit = Number(
-    lesson.maxViews || 2
-  );
-
-  const extraViews = Number(
-    lessonView?.extraViews || 0
-  );
-
-  const viewsUsed = Number(
-    lessonView?.viewsUsed || 0
-  );
-
-  const totalAllowedViews =
-    baseLimit + extraViews;
-
-  const hasActiveSession = Boolean(
-    lessonView?.activeSession
-  );
+  const baseLimit = Number(lesson.maxViews || 2);
+  const extraViews = Number(lessonView?.extraViews || 0);
+  const viewsUsed = Number(lessonView?.viewsUsed || 0);
+  const totalAllowedViews = baseLimit + extraViews;
+  const hasActiveSession = Boolean(lessonView?.activeSession);
 
   const viewsRemaining = Math.max(
     totalAllowedViews - viewsUsed,
@@ -206,6 +195,19 @@ export const getLessonViewSummary = ({
     0
   );
 
+  const activeSession = lessonView?.activeSession
+    ? {
+        sessionId: lessonView.activeSession.sessionId,
+        startedAt: lessonView.activeSession.startedAt,
+        lastHeartbeatAt:
+          lessonView.activeSession.lastHeartbeatAt,
+        watchedSeconds:
+          lessonView.activeSession.watchedSeconds || 0,
+        durationSeconds:
+          lessonView.activeSession.durationSeconds || 0,
+      }
+    : null;
+
   return {
     baseLimit,
     extraViews,
@@ -214,7 +216,6 @@ export const getLessonViewSummary = ({
     viewsRemaining,
     newViewsRemaining,
     hasActiveSession,
-    activeSession:
-      lessonView?.activeSession || null,
+    activeSession,
   };
 };

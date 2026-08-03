@@ -78,6 +78,37 @@ export const validateEnvironment = () => {
     "OTP_RESEND_COOLDOWN_SECONDS must be a positive number."
   );
 
+  addError(
+  errors,
+  hasValue("PLAYBACK_HEARTBEAT_SECONDS") &&
+    !isPositiveNumber(process.env.PLAYBACK_HEARTBEAT_SECONDS),
+  "PLAYBACK_HEARTBEAT_SECONDS must be a positive number."
+);
+
+addError(
+  errors,
+  hasValue("PLAYBACK_STALE_MINUTES") &&
+    !isPositiveNumber(process.env.PLAYBACK_STALE_MINUTES),
+  "PLAYBACK_STALE_MINUTES must be a positive number."
+);
+
+if (
+  isPositiveNumber(process.env.PLAYBACK_HEARTBEAT_SECONDS) &&
+  isPositiveNumber(process.env.PLAYBACK_STALE_MINUTES)
+) {
+  const heartbeatSeconds =
+    Number(process.env.PLAYBACK_HEARTBEAT_SECONDS);
+
+  const staleSeconds =
+    Number(process.env.PLAYBACK_STALE_MINUTES) * 60;
+
+  addError(
+    errors,
+    staleSeconds <= heartbeatSeconds * 2,
+    "PLAYBACK_STALE_MINUTES must allow more than two heartbeat intervals."
+  );
+}
+
   const timezone = process.env.APP_TIMEZONE || "Asia/Colombo";
   const timezoneCheck = DateTime.now().setZone(timezone);
 

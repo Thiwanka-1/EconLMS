@@ -18,6 +18,11 @@ export const errorHandler = (
   res,
   next
 ) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
+
   let statusCode =
     error.statusCode ||
     error.status ||

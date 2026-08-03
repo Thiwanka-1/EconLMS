@@ -29,6 +29,8 @@ const isSensitiveKey = (key) => {
 
 const sanitizeMetadata = (metadata) => {
   try {
+    const seenObjects = new WeakSet();
+
     const json = JSON.stringify(
       metadata || {},
       (key, value) => {
@@ -40,14 +42,30 @@ const sanitizeMetadata = (metadata) => {
           return "[BUFFER_REDACTED]";
         }
 
+        if (
+          value &&
+          typeof value === "object" &&
+          value.type === "Buffer" &&
+          Array.isArray(value.data)
+        ) {
+          return "[BUFFER_REDACTED]";
+        }
+
+        if (
+          value &&
+          typeof value === "object"
+        ) {
+          if (seenObjects.has(value)) {
+            return "[CIRCULAR]";
+          }
+
+          seenObjects.add(value);
+        }
+
         return value;
       }
     );
 
-    /*
-     * Prevent accidentally storing extremely large
-     * request objects in an audit record.
-     */
     if (json.length > 20_000) {
       return {
         truncated: true,
@@ -61,6 +79,22 @@ const sanitizeMetadata = (metadata) => {
     return {
       serializationError: true,
     };
+  }
+};
+
+const getRequestPath = (req) => {
+  const rawUrl =
+    req?.originalUrl ||
+    req?.url ||
+    "";
+
+  try {
+    return new URL(
+      rawUrl,
+      "http://localhost"
+    ).pathname;
+  } catch {
+    return String(rawUrl).split("?")[0];
   }
 };
 
@@ -102,10 +136,7 @@ export const recordAuditLog = async ({
 
       request: {
         method: req?.method || "",
-        path:
-          req?.originalUrl ||
-          req?.url ||
-          "",
+        path: getRequestPath(req),
         ipAddress:
           req?.ip ||
           req?.socket?.remoteAddress ||

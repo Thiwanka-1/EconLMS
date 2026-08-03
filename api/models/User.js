@@ -151,6 +151,11 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    nicReviewedAt: {
+      type: Date,
+      default: null,
+    },
+
     role: {
       type: String,
       enum: ["student", "admin"],
@@ -226,6 +231,8 @@ authVersion: {
         delete returnedObject.__v;
         delete returnedObject.authVersion;
         delete returnedObject.nicImageFileId;
+        delete returnedObject.nicImageStoredName;
+        delete returnedObject.nicVerifiedBy;
 
         delete returnedObject.emailVerificationOtpHash;
         delete returnedObject.emailVerificationOtpExpiresAt;

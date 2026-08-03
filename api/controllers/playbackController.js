@@ -97,6 +97,12 @@ export const startPlayback =
       lesson,
     });
 
+    const requestedSessionId =
+      typeof req.body?.sessionId === "string"
+        ? req.body.sessionId.trim()
+        : "";
+
+
     let lessonView =
       await getOrCreateLessonView({
         studentId: req.user._id,
@@ -109,11 +115,22 @@ export const startPlayback =
       );
 
     /*
-     * A quick refresh or temporary disconnect
-     * returns the same session without consuming
-     * another viewing opportunity.
-     */
+ * Refreshing the same player can resume only
+ * when it presents the existing session ID.
+ * A different browser or tab cannot silently
+ * take over the active playback session.
+ */
     if (lessonView.activeSession) {
+      if (
+        !requestedSessionId ||
+        requestedSessionId !== lessonView.activeSession.sessionId
+      ) {
+        throw new HttpError(
+          409,
+          "This lesson already has an active playback session."
+        );
+      }
+
       const summary =
         getLessonViewSummary({
           lesson,
@@ -690,9 +707,12 @@ export const resetLessonViews =
               .ipAddress || "",
         };
 
-        lessonView.history.push(
-          historyEntry
-        );
+        lessonView.history.push(historyEntry);
+
+        if (lessonView.history.length > 30) {
+          lessonView.history =
+            lessonView.history.slice(-30);
+        }
       }
 
       lessonView.viewsUsed = 0;

@@ -23,6 +23,17 @@ const router = express.Router();
 
 router.use(protect);
 
+router.use((req, res, next) => {
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
+
+/*
+ * Student playback routes.
+ */
+
 /*
  * Student playback routes.
  */

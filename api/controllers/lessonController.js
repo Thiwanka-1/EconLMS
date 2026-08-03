@@ -2,7 +2,7 @@ import Course from "../models/Course.js";
 import Lesson from "../models/Lesson.js";
 import LessonView from "../models/LessonView.js";
 import BillingPeriod from "../models/BillingPeriod.js";
-
+import mongoose from "mongoose";
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
 
@@ -145,11 +145,12 @@ export const createLesson = asyncHandler(
 
     if (
       !Number.isInteger(parsedMaxViews) ||
-      parsedMaxViews < 1
+      parsedMaxViews < 1 ||
+      parsedMaxViews > 100
     ) {
       throw new HttpError(
         400,
-        "Maximum views must be a positive whole number."
+        "Maximum views must be a whole number between 1 and 100."
       );
     }
 
@@ -251,13 +252,32 @@ export const getStudentLessonsByCourse =
 
     let billingPeriod = null;
 
-    if (
-      course.paymentPlan === "monthly"
-    ) {
-      billingPeriod =
-        await getOrCreateCurrentBillingPeriod(
-          course
-        );
+    if (course.paymentPlan === "monthly") {
+      const requestedBillingPeriodId = String(
+        req.query.billingPeriodId || ""
+      ).trim();
+
+      if (requestedBillingPeriodId) {
+        if (!mongoose.isValidObjectId(requestedBillingPeriodId)) {
+          throw new HttpError(400, "Invalid billing period ID.");
+        }
+
+        billingPeriod = await BillingPeriod.findOne({
+          _id: requestedBillingPeriodId,
+          course: course._id,
+          isPublished: true,
+          isArchived: false,
+        });
+
+        if (!billingPeriod) {
+          throw new HttpError(
+            404,
+            "The requested billing period is not available for this course."
+          );
+        }
+      } else {
+        billingPeriod = await getOrCreateCurrentBillingPeriod(course);
+      }
     }
 
     const access =
@@ -452,11 +472,12 @@ export const updateLesson = asyncHandler(
 
       if (
         !Number.isInteger(maxViews) ||
-        maxViews < 1
+        maxViews < 1 ||
+        maxViews > 100
       ) {
         throw new HttpError(
           400,
-          "Maximum views must be a positive whole number."
+          "Maximum views must be a whole number between 1 and 100."
         );
       }
 

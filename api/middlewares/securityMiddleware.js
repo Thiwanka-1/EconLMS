@@ -32,10 +32,13 @@ const normalizeOrigin = (value) => {
 };
 
 export const getAllowedOrigins = () => {
-  const configuredOrigins = String(
-    process.env.CLIENT_ORIGINS || ""
-  )
-    .split(",")
+  const configuredOrigins = [
+    process.env.CLIENT_ORIGINS,
+    process.env.CLIENT_URL,
+  ]
+    .flatMap((value) =>
+      String(value || "").split(",")
+    )
     .map((value) => value.trim())
     .filter(Boolean)
     .map(normalizeOrigin)

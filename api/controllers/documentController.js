@@ -167,6 +167,7 @@ export const uploadMyNicImage =
       student.nicVerificationNote = "";
       student.nicVerifiedBy = null;
       student.nicVerifiedAt = null;
+      student.nicReviewedAt = null;
 
       await student.save();
     } catch (error) {
@@ -276,6 +277,9 @@ export const getMyNicStatus =
 
         verifiedAt:
           student.nicVerifiedAt,
+
+        reviewedAt:
+          student.nicReviewedAt,
       },
     });
   });
@@ -354,40 +358,67 @@ export const getStudentNicStatusAdmin =
 
         verifiedAt:
           student.nicVerifiedAt,
-      },
+
+        reviewedAt:
+          student.nicReviewedAt,
+              },
     });
   });
 
 export const updateNicVerificationStatus =
   asyncHandler(async (req, res) => {
-    const {
-      status,
-      note,
-    } = req.body;
+    const status =
+      typeof req.body.status === "string"
+        ? req.body.status.trim()
+        : "";
+
+    const note =
+      typeof req.body.note === "string"
+        ? req.body.note.trim()
+        : "";
+
+    const expectedUploadedAt =
+      typeof req.body.expectedUploadedAt === "string"
+        ? req.body.expectedUploadedAt.trim()
+        : "";
 
     const allowedStatuses = [
       "verified",
       "rejected",
     ];
 
-    if (
-      !allowedStatuses.includes(
-        status
-      )
-    ) {
+    if (!allowedStatuses.includes(status)) {
       throw new HttpError(
         400,
         "Status must be verified or rejected."
       );
     }
 
-    if (
-      status === "rejected" &&
-      !String(note || "").trim()
-    ) {
+    if (status === "rejected" && !note) {
       throw new HttpError(
         400,
         "A rejection reason is required."
+      );
+    }
+
+    if (!expectedUploadedAt) {
+      throw new HttpError(
+        400,
+        "expectedUploadedAt is required."
+      );
+    }
+
+    const expectedUploadDate =
+      new Date(expectedUploadedAt);
+
+    if (
+      Number.isNaN(
+        expectedUploadDate.getTime()
+      )
+    ) {
+      throw new HttpError(
+        400,
+        "expectedUploadedAt must be a valid date."
       );
     }
 
@@ -403,17 +434,43 @@ export const updateNicVerificationStatus =
       );
     }
 
+    const currentUploadTime =
+      student.nicImageUploadedAt
+        ? new Date(
+            student.nicImageUploadedAt
+          ).getTime()
+        : null;
+
+    if (
+      currentUploadTime !==
+      expectedUploadDate.getTime()
+    ) {
+      throw new HttpError(
+        409,
+        "The student uploaded a newer NIC image. Review the current image before making a decision."
+      );
+    }
+
+    const reviewedAt = new Date();
+
     student.nicVerificationStatus =
       status;
 
     student.nicVerificationNote =
-      String(note || "").trim();
+      status === "rejected"
+        ? note
+        : "";
 
     student.nicVerifiedBy =
       req.user._id;
 
+    student.nicReviewedAt =
+      reviewedAt;
+
     student.nicVerifiedAt =
-      new Date();
+      status === "verified"
+        ? reviewedAt
+        : null;
 
     await student.save();
 
@@ -443,11 +500,15 @@ export const updateNicVerificationStatus =
 
         verifiedAt:
           student.nicVerifiedAt,
+
+        reviewedAt:
+          student.nicReviewedAt,
       },
 
       notifications: {
-        processed:
-          notificationResult.success,
+        processed: Boolean(
+          notificationResult?.success
+        ),
       },
     });
   });

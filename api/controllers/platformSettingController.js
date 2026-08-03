@@ -61,6 +61,67 @@ const isPlainObject = (value) => {
   );
 };
 
+const booleanSettingPaths = new Set([
+  "registration.isOpen",
+  "maintenanceNotice.enabled",
+]);
+
+const integerSettingRanges = new Map([
+  [
+    "learning.defaultLessonMaxViews",
+    { min: 1, max: 100 },
+  ],
+  [
+    "liveClasses.defaultJoinBeforeMinutes",
+    { min: 0, max: 1440 },
+  ],
+  [
+    "liveClasses.defaultJoinAfterMinutes",
+    { min: 0, max: 1440 },
+  ],
+]);
+
+const validateSettingValue = ({
+  path,
+  value,
+}) => {
+  if (booleanSettingPaths.has(path)) {
+    if (typeof value !== "boolean") {
+      throw new HttpError(
+        400,
+        `${path} must be true or false.`
+      );
+    }
+
+    return;
+  }
+
+  const integerRange =
+    integerSettingRanges.get(path);
+
+  if (integerRange) {
+    if (
+      !Number.isInteger(value) ||
+      value < integerRange.min ||
+      value > integerRange.max
+    ) {
+      throw new HttpError(
+        400,
+        `${path} must be a whole number between ${integerRange.min} and ${integerRange.max}.`
+      );
+    }
+
+    return;
+  }
+
+  if (typeof value !== "string") {
+    throw new HttpError(
+      400,
+      `${path} must be a string.`
+    );
+  }
+};
+
 const validateSettingsPayload = (
   payload
 ) => {
@@ -103,9 +164,15 @@ const validateSettingsPayload = (
         );
       }
 
-      changedPaths.push(
-        `${section}.${field}`
-      );
+      const fieldPath =
+        `${section}.${field}`;
+
+      validateSettingValue({
+        path: fieldPath,
+        value: sectionValue[field],
+      });
+
+      changedPaths.push(fieldPath);
     }
   }
 
