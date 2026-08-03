@@ -8,14 +8,20 @@ import PublicLayout from "./layouts/PublicLayout.jsx";
 import StudentLayout from "./layouts/StudentLayout.jsx";
 
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
+
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage.jsx";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage.jsx";
 import SignupPage from "./pages/auth/SignupPage.jsx";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage.jsx";
+
 import HomePage from "./pages/public/HomePage.jsx";
 import NotFoundPage from "./pages/public/NotFoundPage.jsx";
+
 import StudentDashboardPage from "./pages/student/StudentDashboardPage.jsx";
+import StudentNicPage from "./pages/student/StudentNicPage.jsx";
+import StudentProfilePage from "./pages/student/StudentProfilePage.jsx";
+import StudentSecurityPage from "./pages/student/StudentSecurityPage.jsx";
 
 import GuestOnly from "./routes/GuestOnly.jsx";
 import RequireAuth from "./routes/RequireAuth.jsx";
@@ -84,6 +90,27 @@ export default function App() {
             path="/student"
             element={
               <StudentDashboardPage />
+            }
+          />
+
+          <Route
+            path="/student/profile"
+            element={
+              <StudentProfilePage />
+            }
+          />
+
+          <Route
+            path="/student/nic"
+            element={
+              <StudentNicPage />
+            }
+          />
+
+          <Route
+            path="/student/security"
+            element={
+              <StudentSecurityPage />
             }
           />
         </Route>

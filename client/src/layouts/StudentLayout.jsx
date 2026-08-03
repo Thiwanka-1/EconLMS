@@ -10,6 +10,18 @@ export default function StudentLayout() {
           label: "Dashboard",
           end: true,
         },
+        {
+          to: "/student/profile",
+          label: "Profile",
+        },
+        {
+          to: "/student/nic",
+          label: "NIC document",
+        },
+        {
+          to: "/student/security",
+          label: "Security",
+        },
       ]}
     />
   );

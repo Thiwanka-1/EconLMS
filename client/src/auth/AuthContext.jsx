@@ -25,38 +25,49 @@ export function AuthProvider({
   const [status, setStatus] =
     useState("loading");
 
+  const refreshUser =
+    useCallback(async () => {
+      const result =
+        await getCurrentUser();
+
+      setUser(result.user);
+
+      return result.user;
+    }, []);
+
   useEffect(() => {
     let active = true;
 
-    const restoreSession = async () => {
-      try {
-        const result =
-          await getCurrentUser();
+    const restoreSession =
+      async () => {
+        try {
+          const result =
+            await getCurrentUser();
 
-        if (active) {
-          setUser(result.user);
-        }
-      } catch (error) {
-        if (
-          active &&
-          error.status !== 401 &&
-          error.status !== 403
-        ) {
-          console.error(
-            "Session restoration failed:",
-            error
-          );
-        }
+          if (active) {
+            setUser(result.user);
+          }
+        } catch (error) {
+          if (
+            active &&
+            error.status !== 401 &&
+            error.status !== 403
+          ) {
+            console.error(
+              "Session restoration failed:",
+              error
+            );
+          }
 
-        if (active) {
-          setUser(null);
+          if (active) {
+            setUser(null);
+          }
+        } finally {
+          if (active) {
+            setStatus("ready");
+          }
         }
-      } finally {
-        if (active) {
-          setStatus("ready");
-        }
-      }
-    };
+      };
 
     restoreSession();
 
@@ -83,23 +94,24 @@ export function AuthProvider({
     []
   );
 
-  const verifyEmail = useCallback(
-    async ({
-      email,
-      otp,
-    }) => {
-      const result =
-        await verifyEmailAddress({
-          email,
-          otp,
-        });
+  const verifyEmail =
+    useCallback(
+      async ({
+        email,
+        otp,
+      }) => {
+        const result =
+          await verifyEmailAddress({
+            email,
+            otp,
+          });
 
-      setUser(result.user);
+        setUser(result.user);
 
-      return result.user;
-    },
-    []
-  );
+        return result.user;
+      },
+      []
+    );
 
   const logout = useCallback(
     async () => {
@@ -116,10 +128,13 @@ export function AuthProvider({
     () => ({
       user,
       status,
+
       isAuthenticated:
         Boolean(user),
+
       login,
       verifyEmail,
+      refreshUser,
       logout,
     }),
     [
@@ -127,6 +142,7 @@ export function AuthProvider({
       status,
       login,
       verifyEmail,
+      refreshUser,
       logout,
     ]
   );

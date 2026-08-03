@@ -29,27 +29,90 @@ export class ApiError extends Error {
   }
 }
 
-const parseResponseBody = async (response) => {
+const parseResponseBody = async (
+  response
+) => {
   if (response.status === 204) {
     return null;
   }
 
   const contentType =
-    response.headers.get("content-type") || "";
+    response.headers.get(
+      "content-type"
+    ) || "";
 
   if (
-    contentType.includes("application/json")
+    contentType.includes(
+      "application/json"
+    )
   ) {
-    return response.json();
+    try {
+      return await response.json();
+    } catch {
+      return {
+        message:
+          "The server returned invalid JSON.",
+      };
+    }
   }
 
-  const text = await response.text();
+  const text =
+    await response.text();
 
   return text
     ? {
         message: text,
       }
     : null;
+};
+
+const createApiError = (
+  response,
+  data
+) => {
+  return new ApiError(
+    data?.message ||
+      "The request could not be completed.",
+    {
+      status: response.status,
+
+      requestId:
+        data?.requestId ||
+        response.headers.get(
+          "x-request-id"
+        ),
+
+      details: data,
+    }
+  );
+};
+
+const performFetch = async (
+  path,
+  options
+) => {
+  try {
+    return await fetch(
+      `${API_BASE_URL}${path}`,
+      {
+        credentials: "include",
+        ...options,
+      }
+    );
+  } catch (error) {
+    if (
+      error.name === "AbortError"
+    ) {
+      throw error;
+    }
+
+    throw new ApiError(
+      "The server could not be reached. Check that the API is running.",
+      {
+        details: error,
+      }
+    );
+  }
 };
 
 export const apiRequest = async (
@@ -77,53 +140,72 @@ export const apiRequest = async (
       "application/json"
     );
 
-    requestBody = JSON.stringify(body);
+    requestBody =
+      JSON.stringify(body);
   }
 
-  let response;
-
-  try {
-    response = await fetch(
-      `${API_BASE_URL}${path}`,
-      {
-        method,
-        credentials: "include",
-        headers: requestHeaders,
-        body: requestBody,
-        signal,
-      }
-    );
-  } catch (error) {
-    if (error.name === "AbortError") {
-      throw error;
-    }
-
-    throw new ApiError(
-      "The server could not be reached. Check that the API is running.",
-      {
-        details: error,
-      }
-    );
-  }
+  const response =
+    await performFetch(path, {
+      method,
+      headers: requestHeaders,
+      body: requestBody,
+      signal,
+    });
 
   const data =
-    await parseResponseBody(response);
+    await parseResponseBody(
+      response
+    );
 
   if (!response.ok) {
-    throw new ApiError(
-      data?.message ||
-        "The request could not be completed.",
-      {
-        status: response.status,
-        requestId:
-          data?.requestId ||
-          response.headers.get(
-            "x-request-id"
-          ),
-        details: data,
-      }
+    throw createApiError(
+      response,
+      data
     );
   }
 
   return data;
+};
+
+export const apiBlobRequest = async (
+  path,
+  {
+    method = "GET",
+    headers,
+    signal,
+  } = {}
+) => {
+  const response =
+    await performFetch(path, {
+      method,
+      headers:
+        new Headers(headers),
+      signal,
+    });
+
+  if (!response.ok) {
+    const data =
+      await parseResponseBody(
+        response
+      );
+
+    throw createApiError(
+      response,
+      data
+    );
+  }
+
+  return {
+    blob: await response.blob(),
+
+    contentType:
+      response.headers.get(
+        "content-type"
+      ) || "",
+
+    contentDisposition:
+      response.headers.get(
+        "content-disposition"
+      ) || "",
+  };
 };
