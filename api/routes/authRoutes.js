@@ -12,70 +12,24 @@ import {
   verifyEmail,
 } from "../controllers/authController.js";
 
-import {
-  protect,
-} from "../middlewares/authMiddleware.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
 import {
-  authLimiter,
-  otpRequestLimiter,
-  otpVerifyLimiter,
-} from "../middlewares/rateLimiters.js";
+  loginRateLimiter,
+  otpSendRateLimiter,
+  sensitiveActionRateLimiter,
+} from "../middlewares/securityMiddleware.js";
 
 const router = express.Router();
 
-router.post(
-  "/signup",
-  authLimiter,
-  signup
-);
-
-router.post(
-  "/verify-email",
-  otpVerifyLimiter,
-  verifyEmail
-);
-
-router.post(
-  "/resend-verification",
-  otpRequestLimiter,
-  resendVerificationOtp
-);
-
-router.post(
-  "/login",
-  authLimiter,
-  login
-);
-
-router.post(
-  "/logout",
-  logout
-);
-
-router.post(
-  "/forgot-password",
-  otpRequestLimiter,
-  forgotPassword
-);
-
-router.post(
-  "/reset-password",
-  otpVerifyLimiter,
-  resetPassword
-);
-
-router.patch(
-  "/change-password",
-  protect,
-  authLimiter,
-  changePassword
-);
-
-router.get(
-  "/me",
-  protect,
-  getCurrentUser
-);
+router.post("/signup", sensitiveActionRateLimiter, signup);
+router.post("/verify-email", sensitiveActionRateLimiter, verifyEmail);
+router.post("/resend-verification-otp", otpSendRateLimiter, resendVerificationOtp);
+router.post("/login", loginRateLimiter, login);
+router.post("/logout", logout);
+router.post("/forgot-password", otpSendRateLimiter, forgotPassword);
+router.post("/reset-password", sensitiveActionRateLimiter, resetPassword);
+router.patch("/change-password", protect, sensitiveActionRateLimiter, changePassword);
+router.get("/me", protect, getCurrentUser);
 
 export default router;

@@ -16,11 +16,17 @@ import {
 import HttpError from "../utils/HttpError.js";
 
 const getDocumentId = (value) => {
-  return (
-    value?._id?.toString() ||
-    value?.toString() ||
-    null
-  );
+  return value?._id?.toString() || value?.toString() || null;
+};
+
+const getLiveClassWithMeetingId = async (liveClassValue) => {
+  const liveClassId = getDocumentId(liveClassValue);
+
+  if (!liveClassId) {
+    return null;
+  }
+
+  return LiveClass.findById(liveClassId).select("+zoomMeetingId");
 };
 
 export const checkStudentLiveClassAccess =
@@ -28,10 +34,13 @@ export const checkStudentLiveClassAccess =
     studentId,
     liveClass,
   }) => {
+    const courseId =
+      getDocumentId(liveClass.course);
+
     const enrollment =
       await Enrollment.findOne({
         student: studentId,
-        course: liveClass.course,
+        course: courseId,
       });
 
     if (!enrollment) {
@@ -68,10 +77,15 @@ export const checkStudentLiveClassAccess =
       };
     }
 
-    const billingPeriodId =
-      getDocumentId(
-        liveClass.billingPeriod
-      );
+    const billingPeriodId = getDocumentId(liveClass.billingPeriod);
+
+    if (!billingPeriodId) {
+      return {
+        hasAccess: false,
+        reason: "This monthly live class does not have a billing period.",
+        enrollment,
+      };
+    }
 
     const approved =
       enrollment.approvedBillingPeriods.some(
@@ -104,13 +118,7 @@ export const ensureStudentZoomRegistration =
             studentValue
           );
 
-    const liveClass =
-      typeof liveClassValue === "object" &&
-      liveClassValue._id
-        ? liveClassValue
-        : await LiveClass.findById(
-            liveClassValue
-          );
+    const liveClass = await getLiveClassWithMeetingId(liveClassValue);
 
     if (!student || !student.isActive) {
       throw new HttpError(
@@ -120,10 +128,11 @@ export const ensureStudentZoomRegistration =
     }
 
     if (!liveClass) {
-      throw new HttpError(
-        404,
-        "Live class not found."
-      );
+      throw new HttpError(404, "Live class not found.");
+    }
+
+    if (!liveClass.zoomMeetingId) {
+      throw new HttpError(500, "The live class does not have a Zoom meeting ID.");
     }
 
     if (!student.zoomEmail) {
@@ -161,30 +170,29 @@ export const ensureStudentZoomRegistration =
     }
 
     if (!registration) {
-      registration =
-        await ZoomRegistration.create({
+      registration = await ZoomRegistration.findOneAndUpdate(
+        {
           liveClass: liveClass._id,
-          course: liveClass.course,
-
-          billingPeriod:
-            liveClass.billingPeriod ||
-            null,
-
           student: student._id,
-
-          zoomMeetingId:
-            liveClass.zoomMeetingId,
-
-          zoomEmail:
-            student.zoomEmail,
-
-          status: "pending",
-        });
-
-      registration =
-        await ZoomRegistration.findById(
-          registration._id
-        ).select("+encryptedJoinUrl");
+        },
+        {
+          $setOnInsert: {
+            liveClass: liveClass._id,
+            course: liveClass.course,
+            billingPeriod: liveClass.billingPeriod || null,
+            student: student._id,
+            zoomMeetingId: liveClass.zoomMeetingId,
+            zoomEmail: student.zoomEmail,
+            status: "pending",
+          },
+        },
+        {
+          upsert: true,
+          returnDocument: "after",
+          setDefaultsOnInsert: true,
+          runValidators: true,
+        }
+      ).select("+encryptedJoinUrl");
     }
 
     registration.attempts += 1;
@@ -294,19 +302,14 @@ export const getDecryptedJoinUrl = (
 
 export const syncLiveClassRegistrations =
   async (liveClassValue) => {
-    const liveClass =
-      typeof liveClassValue === "object" &&
-      liveClassValue._id
-        ? liveClassValue
-        : await LiveClass.findById(
-            liveClassValue
-          );
+    const liveClass = await getLiveClassWithMeetingId(liveClassValue);
 
     if (!liveClass) {
-      throw new HttpError(
-        404,
-        "Live class not found."
-      );
+      throw new HttpError(404, "Live class not found.");
+    }
+
+    if (!liveClass.zoomMeetingId) {
+      throw new HttpError(500, "The live class does not have a Zoom meeting ID.");
     }
 
     const enrollmentFilter = {
@@ -411,7 +414,9 @@ export const registerStudentForEligibleLiveClasses =
     }
 
     const liveClasses =
-      await LiveClass.find(filter);
+      await LiveClass.find(
+        filter
+      ).select("+zoomMeetingId");
 
     const student =
       await User.findById(studentId);

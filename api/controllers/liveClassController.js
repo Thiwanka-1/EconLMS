@@ -22,6 +22,14 @@ import {
   syncLiveClassRegistrations,
 } from "../services/zoomRegistrationService.js";
 
+import {
+  getPlatformSettings,
+} from "../utils/platformSettings.js";
+
+/*
+ * Finds or creates the correct billing period
+ * for a live class.
+ */
 const resolveBillingPeriod = async ({
   course,
   billingPeriodId,
@@ -39,6 +47,10 @@ const resolveBillingPeriod = async ({
     return null;
   }
 
+  /*
+   * When no period is supplied for a monthly
+   * course, use the current billing period.
+   */
   if (!billingPeriodId) {
     return getOrCreateCurrentBillingPeriod(
       course
@@ -62,42 +74,108 @@ const resolveBillingPeriod = async ({
   return billingPeriod;
 };
 
+/*
+ * Validates the number of minutes used for
+ * the Zoom joining window.
+ */
+const parseJoinWindowMinutes = ({
+  value,
+  fallback,
+  fieldName,
+}) => {
+  const parsedValue = Number(
+    value ?? fallback
+  );
+
+  if (
+    !Number.isInteger(parsedValue) ||
+    parsedValue < 0 ||
+    parsedValue > 1440
+  ) {
+    throw new HttpError(
+      400,
+      `${fieldName} must be a whole number between 0 and 1440.`
+    );
+  }
+
+  return parsedValue;
+};
+
+/*
+ * Calculates when the Zoom join button should
+ * open and close.
+ */
 const getJoinWindow = (liveClass) => {
-  const startTime =
-    new Date(
-      liveClass.startTime
-    ).getTime();
+  const startTime = new Date(
+    liveClass.startTime
+  ).getTime();
+
+  const durationMinutes = Number(
+    liveClass.durationMinutes
+  );
+
+  const joinBeforeMinutes = Number(
+    liveClass.joinWindowMinutesBefore
+  );
+
+  const joinAfterMinutes = Number(
+    liveClass.joinWindowMinutesAfter
+  );
+
+  if (
+    !Number.isFinite(startTime) ||
+    !Number.isFinite(durationMinutes) ||
+    !Number.isFinite(joinBeforeMinutes) ||
+    !Number.isFinite(joinAfterMinutes)
+  ) {
+    throw new HttpError(
+      500,
+      "The live-class joining window is invalid."
+    );
+  }
 
   const endTime =
     startTime +
-    liveClass.durationMinutes *
-      60 *
-      1000;
+    durationMinutes * 60 * 1000;
 
   const opensAt =
     startTime -
-    liveClass
-      .joinWindowMinutesBefore *
-      60 *
-      1000;
+    joinBeforeMinutes * 60 * 1000;
 
   const closesAt =
     endTime +
-    liveClass
-      .joinWindowMinutesAfter *
-      60 *
-      1000;
+    joinAfterMinutes * 60 * 1000;
+
+  const now = Date.now();
 
   return {
     opensAt: new Date(opensAt),
     closesAt: new Date(closesAt),
 
     canJoinNow:
-      Date.now() >= opensAt &&
-      Date.now() <= closesAt,
+      now >= opensAt &&
+      now <= closesAt,
   };
 };
 
+/*
+ * LiveClass.toJSON() hides Zoom meeting fields.
+ * Admin endpoints can use this function when
+ * those fields need to be returned.
+ */
+const serializeAdminLiveClass = (
+  liveClass
+) => {
+  return liveClass.toObject({
+    versionKey: false,
+    transform: false,
+  });
+};
+
+/*
+ * ADMIN: Create a live class by connecting an
+ * existing Zoom meeting.
+ */
 export const createLiveClass =
   asyncHandler(async (req, res) => {
     const {
@@ -136,6 +214,13 @@ export const createLiveClass =
         zoomMeetingId
       );
 
+    if (!normalizedMeetingId) {
+      throw new HttpError(
+        400,
+        "A valid Zoom meeting ID is required."
+      );
+    }
+
     const existingLiveClass =
       await LiveClass.findOne({
         zoomMeetingId:
@@ -155,14 +240,18 @@ export const createLiveClass =
         billingPeriodId,
       });
 
+    /*
+     * Fetch the official meeting details
+     * directly from Zoom.
+     */
     const zoomMeeting =
       await getZoomMeeting(
         normalizedMeetingId
       );
 
     /*
-     * Initial implementation supports one
-     * scheduled Zoom meeting per live class.
+     * Type 2 means a scheduled,
+     * non-recurring Zoom meeting.
      */
     if (zoomMeeting.type !== 2) {
       throw new HttpError(
@@ -178,6 +267,10 @@ export const createLiveClass =
       );
     }
 
+    /*
+     * approval_type 2 means that registration
+     * is not enabled for the meeting.
+     */
     if (
       zoomMeeting.settings
         ?.approval_type === 2
@@ -187,6 +280,39 @@ export const createLiveClass =
         "Registration is not enabled for this Zoom meeting."
       );
     }
+
+    const platformSettings =
+      await getPlatformSettings();
+
+    const defaultJoinBefore =
+      platformSettings?.liveClasses
+        ?.defaultJoinBeforeMinutes ??
+      30;
+
+    const defaultJoinAfter =
+      platformSettings?.liveClasses
+        ?.defaultJoinAfterMinutes ??
+      15;
+
+    const parsedJoinBefore =
+      parseJoinWindowMinutes({
+        value:
+          joinWindowMinutesBefore,
+        fallback:
+          defaultJoinBefore,
+        fieldName:
+          "joinWindowMinutesBefore",
+      });
+
+    const parsedJoinAfter =
+      parseJoinWindowMinutes({
+        value:
+          joinWindowMinutesAfter,
+        fallback:
+          defaultJoinAfter,
+        fieldName:
+          "joinWindowMinutesAfter",
+      });
 
     const liveClass =
       await LiveClass.create({
@@ -199,14 +325,18 @@ export const createLiveClass =
           billingPeriod?._id || null,
 
         title:
-          title ||
-          zoomMeeting.topic ||
-          `${course.title} Live Class`,
+          String(
+            title ||
+              zoomMeeting.topic ||
+              `${course.title} Live Class`
+          ).trim(),
 
         description:
-          description ||
-          zoomMeeting.agenda ||
-          "",
+          String(
+            description ||
+              zoomMeeting.agenda ||
+              ""
+          ).trim(),
 
         zoomMeetingId:
           normalizedMeetingId,
@@ -215,7 +345,9 @@ export const createLiveClass =
           zoomMeeting.uuid || null,
 
         startTime:
-          zoomMeeting.start_time,
+          new Date(
+            zoomMeeting.start_time
+          ),
 
         durationMinutes:
           Number(
@@ -228,20 +360,10 @@ export const createLiveClass =
           "Asia/Colombo",
 
         joinWindowMinutesBefore:
-          Number(
-            joinWindowMinutesBefore ??
-              process.env
-                .ZOOM_DEFAULT_JOIN_BEFORE_MINUTES ??
-              30
-          ),
+          parsedJoinBefore,
 
         joinWindowMinutesAfter:
-          Number(
-            joinWindowMinutesAfter ??
-              process.env
-                .ZOOM_DEFAULT_JOIN_AFTER_MINUTES ??
-              15
-          ),
+          parsedJoinAfter,
 
         isPublished:
           typeof isPublished ===
@@ -253,24 +375,68 @@ export const createLiveClass =
         updatedBy: req.user._id,
       });
 
+    /*
+     * Register existing paid students.
+     * Failure here must not delete or undo
+     * the newly created live class.
+     */
     let registrationSync = null;
 
     if (liveClass.isPublished) {
-      registrationSync =
-        await syncLiveClassRegistrations(
-          liveClass
+      try {
+        registrationSync =
+          await syncLiveClassRegistrations(
+            liveClass
+          );
+      } catch (error) {
+        console.error(
+          "[ZOOM] Initial registration synchronization failed:",
+          error.message
         );
+
+        registrationSync = {
+          success: false,
+          successCount: 0,
+          failureCount: 0,
+          error: error.message,
+        };
+      }
     }
+
+    const adminLiveClass =
+      await LiveClass.findById(
+        liveClass._id
+      )
+        .select(
+          "+zoomMeetingId +zoomMeetingUuid"
+        )
+        .populate(
+          "course",
+          "title code paymentPlan"
+        )
+        .populate(
+          "billingPeriod",
+          "label year month"
+        );
 
     res.status(201).json({
       success: true,
+
       message:
         "Live class connected successfully.",
-      liveClass,
+
+      liveClass:
+        serializeAdminLiveClass(
+          adminLiveClass
+        ),
+
       registrationSync,
     });
   });
 
+/*
+ * ADMIN: List live classes.
+ */
 export const getAdminLiveClasses =
   asyncHandler(async (req, res) => {
     const filter = {};
@@ -281,12 +447,32 @@ export const getAdminLiveClasses =
     }
 
     if (req.query.status) {
+      const allowedStatuses = [
+        "scheduled",
+        "completed",
+        "cancelled",
+      ];
+
+      if (
+        !allowedStatuses.includes(
+          req.query.status
+        )
+      ) {
+        throw new HttpError(
+          400,
+          "Invalid live-class status."
+        );
+      }
+
       filter.status =
         req.query.status;
     }
 
     const liveClasses =
       await LiveClass.find(filter)
+        .select(
+          "+zoomMeetingId +zoomMeetingUuid"
+        )
         .populate(
           "course",
           "title code paymentPlan"
@@ -305,10 +491,21 @@ export const getAdminLiveClasses =
 
     res.status(200).json({
       success: true,
-      liveClasses,
+
+      liveClasses:
+        liveClasses.map(
+          serializeAdminLiveClass
+        ),
     });
   });
 
+/*
+ * STUDENT: List published live classes for
+ * a course.
+ *
+ * Zoom meeting IDs and join URLs are not
+ * returned here.
+ */
 export const getStudentLiveClasses =
   asyncHandler(async (req, res) => {
     const course =
@@ -345,20 +542,18 @@ export const getStudentLiveClasses =
 
     for (const liveClass of liveClasses) {
       const access =
-        await checkStudentLiveClassAccess(
-          {
-            studentId:
-              req.user._id,
-            liveClass,
-          }
-        );
+        await checkStudentLiveClassAccess({
+          studentId:
+            req.user._id,
+          liveClass,
+        });
 
       const registration =
         await ZoomRegistration.findOne({
           liveClass:
             liveClass._id,
           student: req.user._id,
-        });
+        }).select("status");
 
       const joinWindow =
         getJoinWindow(liveClass);
@@ -386,12 +581,19 @@ export const getStudentLiveClasses =
     });
   });
 
+/*
+ * STUDENT: Receive the unique Zoom join URL.
+ */
 export const joinLiveClass =
   asyncHandler(async (req, res) => {
+    /*
+     * zoomMeetingId is hidden by default in
+     * the model, so it must be selected here.
+     */
     const liveClass =
       await LiveClass.findById(
         req.params.id
-      );
+      ).select("+zoomMeetingId");
 
     if (
       !liveClass ||
@@ -406,12 +608,11 @@ export const joinLiveClass =
     }
 
     const access =
-      await checkStudentLiveClassAccess(
-        {
-          studentId: req.user._id,
-          liveClass,
-        }
-      );
+      await checkStudentLiveClassAccess({
+        studentId:
+          req.user._id,
+        liveClass,
+      });
 
     if (!access.hasAccess) {
       throw new HttpError(
@@ -424,22 +625,26 @@ export const joinLiveClass =
       getJoinWindow(liveClass);
 
     if (!joinWindow.canJoinNow) {
+      const currentTime =
+        new Date();
+
+      const message =
+        currentTime <
+        joinWindow.opensAt
+          ? `The join button will become available at ${joinWindow.opensAt.toISOString()}.`
+          : "The joining period for this class has ended.";
+
       throw new HttpError(
         403,
-        new Date() <
-          joinWindow.opensAt
-          ? `The join button will become available at ${joinWindow.opensAt.toISOString()}.`
-          : "The joining period for this class has ended."
+        message
       );
     }
 
     const registration =
-      await ensureStudentZoomRegistration(
-        {
-          student: req.user,
-          liveClass,
-        }
-      );
+      await ensureStudentZoomRegistration({
+        student: req.user,
+        liveClass,
+      });
 
     const joinUrl =
       getDecryptedJoinUrl(
@@ -447,11 +652,12 @@ export const joinLiveClass =
       );
 
     if (!joinUrl) {
-      throw new HttpError(
-        502,
-        "The unique Zoom join URL is unavailable."
-      );
+      throw new HttpError(502, "The unique Zoom join URL is unavailable.");
     }
+
+    res.setHeader("Cache-Control", "private, no-store, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
 
     res.status(200).json({
       success: true,
@@ -476,6 +682,10 @@ export const joinLiveClass =
     });
   });
 
+/*
+ * ADMIN: Register all eligible paid students
+ * for a live class.
+ */
 export const syncLiveClass =
   asyncHandler(async (req, res) => {
     const result =
@@ -485,17 +695,29 @@ export const syncLiveClass =
 
     res.status(200).json({
       success: result.success,
+
       message:
         "Zoom registration synchronization completed.",
+
       registrationSync: result,
     });
   });
 
+/*
+ * ADMIN: Refresh title, time and duration
+ * from the connected Zoom meeting.
+ */
 export const refreshLiveClassFromZoom =
   asyncHandler(async (req, res) => {
+    /*
+     * Both fields are hidden by default,
+     * so they must be selected here.
+     */
     const liveClass =
       await LiveClass.findById(
         req.params.id
+      ).select(
+        "+zoomMeetingId +zoomMeetingUuid"
       );
 
     if (!liveClass) {
@@ -510,6 +732,13 @@ export const refreshLiveClassFromZoom =
         liveClass.zoomMeetingId
       );
 
+    if (!zoomMeeting.start_time) {
+      throw new HttpError(
+        502,
+        "Zoom did not return a valid meeting start time."
+      );
+    }
+
     liveClass.title =
       req.body.keepCustomTitle ===
       true
@@ -518,7 +747,9 @@ export const refreshLiveClassFromZoom =
           liveClass.title;
 
     liveClass.startTime =
-      zoomMeeting.start_time;
+      new Date(
+        zoomMeeting.start_time
+      );
 
     liveClass.durationMinutes =
       Number(
@@ -541,77 +772,83 @@ export const refreshLiveClassFromZoom =
 
     res.status(200).json({
       success: true,
+
       message:
         "Live class refreshed from Zoom.",
-      liveClass,
+
+      liveClass:
+        serializeAdminLiveClass(
+          liveClass
+        ),
     });
   });
 
-export const updateLiveClassStatus =
-  asyncHandler(async (req, res) => {
-    const allowedStatuses = [
-      "scheduled",
-      "completed",
-      "cancelled",
-    ];
+/*
+ * ADMIN: Publish, unpublish, complete or
+ * cancel a live class.
+ */
+export const updateLiveClassStatus = asyncHandler(async (req, res) => {
+  const allowedStatuses = ["scheduled", "completed", "cancelled"];
+  const { status, isPublished } = req.body;
 
-    const {
-      status,
-      isPublished,
-    } = req.body;
+  if (status === undefined && isPublished === undefined) {
+    throw new HttpError(400, "Provide status or isPublished.");
+  }
 
-    const liveClass =
-      await LiveClass.findById(
-        req.params.id
+  if (status !== undefined && !allowedStatuses.includes(status)) {
+    throw new HttpError(400, "Invalid live-class status.");
+  }
+
+  if (isPublished !== undefined && typeof isPublished !== "boolean") {
+    throw new HttpError(400, "isPublished must be true or false.");
+  }
+
+  const liveClass = await LiveClass.findById(req.params.id);
+
+  if (!liveClass) {
+    throw new HttpError(404, "Live class not found.");
+  }
+
+  if (status !== undefined) {
+    liveClass.status = status;
+  }
+
+  if (isPublished !== undefined) {
+    liveClass.isPublished = isPublished;
+  }
+
+  liveClass.updatedBy = req.user._id;
+  await liveClass.save();
+
+  let registrationSync = null;
+
+  const shouldSynchronize =
+    liveClass.isPublished &&
+    liveClass.status === "scheduled" &&
+    (isPublished === true || status === "scheduled");
+
+  if (shouldSynchronize) {
+    try {
+      registrationSync = await syncLiveClassRegistrations(liveClass);
+    } catch (error) {
+      console.error(
+        "[ZOOM] Registration synchronization after status update failed:",
+        error.message
       );
 
-    if (!liveClass) {
-      throw new HttpError(
-        404,
-        "Live class not found."
-      );
+      registrationSync = {
+        success: false,
+        successCount: 0,
+        failureCount: 0,
+        error: error.message,
+      };
     }
+  }
 
-    if (
-      status !== undefined &&
-      !allowedStatuses.includes(status)
-    ) {
-      throw new HttpError(
-        400,
-        "Invalid live-class status."
-      );
-    }
-
-    if (status !== undefined) {
-      liveClass.status = status;
-    }
-
-    if (
-      isPublished !== undefined
-    ) {
-      if (
-        typeof isPublished !==
-        "boolean"
-      ) {
-        throw new HttpError(
-          400,
-          "isPublished must be true or false."
-        );
-      }
-
-      liveClass.isPublished =
-        isPublished;
-    }
-
-    liveClass.updatedBy =
-      req.user._id;
-
-    await liveClass.save();
-
-    res.status(200).json({
-      success: true,
-      message:
-        "Live-class status updated.",
-      liveClass,
-    });
+  res.status(200).json({
+    success: true,
+    message: "Live-class status updated.",
+    liveClass,
+    registrationSync,
   });
+});

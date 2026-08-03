@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 
 import Course from "../models/Course.js";
+import Enrollment from "../models/Enrollment.js";
+import PaymentSubmission from "../models/PaymentSubmission.js";
+
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
 import slugify from "../utils/slugify.js";
@@ -240,6 +243,7 @@ export const createCourse = asyncHandler(
       success: true,
       message: "Course created successfully.",
       course,
+      currentBillingPeriod,
     });
   }
 );
@@ -469,13 +473,27 @@ export const updateCourse = asyncHandler(
     );
 
     if (!course) {
-      throw new HttpError(
-        404,
-        "Course not found."
-      );
+      throw new HttpError(404, "Course not found.");
     }
 
     validateCourseValues(req.body);
+
+    if (
+      req.body.paymentPlan !== undefined &&
+      req.body.paymentPlan !== course.paymentPlan
+    ) {
+      const [hasEnrollments, hasPayments] = await Promise.all([
+        Enrollment.exists({ course: course._id }),
+        PaymentSubmission.exists({ course: course._id }),
+      ]);
+
+      if (hasEnrollments || hasPayments) {
+        throw new HttpError(
+          409,
+          "The payment plan cannot be changed after enrolments or payment submissions exist."
+        );
+      }
+    }
 
     const editableFields = [
       "title",
@@ -545,59 +563,69 @@ export const updateCourse = asyncHandler(
 
     await course.save();
 
+    let currentBillingPeriod = null;
+
+    if (course.paymentPlan === "monthly" && course.isPublished && !course.isArchived) {
+      try {
+        currentBillingPeriod = await getOrCreateCurrentBillingPeriod(course);
+      } catch (error) {
+        console.error(`Failed to ensure billing period for course ${course._id}:`, error.message);
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Course updated successfully.",
       course,
+      currentBillingPeriod,
     });
   }
 );
 
-export const setCoursePublication =
-  asyncHandler(async (req, res) => {
-    const { isPublished } = req.body;
+export const setCoursePublication = asyncHandler(async (req, res) => {
+  const { isPublished } = req.body;
 
-    if (typeof isPublished !== "boolean") {
-      throw new HttpError(
-        400,
-        "isPublished must be true or false."
+  if (typeof isPublished !== "boolean") {
+    throw new HttpError(400, "isPublished must be true or false.");
+  }
+
+  const course = await Course.findById(req.params.id);
+
+  if (!course) {
+    throw new HttpError(404, "Course not found.");
+  }
+
+  if (course.isArchived && isPublished) {
+    throw new HttpError(400, "An archived course cannot be published.");
+  }
+
+  course.isPublished = isPublished;
+  course.updatedBy = req.user._id;
+
+  await course.save();
+
+  let currentBillingPeriod = null;
+
+  if (isPublished && course.paymentPlan === "monthly" && !course.isArchived) {
+    try {
+      currentBillingPeriod = await getOrCreateCurrentBillingPeriod(course);
+    } catch (error) {
+      console.error(
+        `Course ${course._id} was published, but billing-period creation failed:`,
+        error.message
       );
     }
+  }
 
-    const course = await Course.findById(
-      req.params.id
-    );
-
-    if (!course) {
-      throw new HttpError(
-        404,
-        "Course not found."
-      );
-    }
-
-    if (
-      course.isArchived &&
-      isPublished === true
-    ) {
-      throw new HttpError(
-        400,
-        "An archived course cannot be published."
-      );
-    }
-
-    course.isPublished = isPublished;
-    course.updatedBy = req.user._id;
-
-    await course.save();
-
-    res.status(200).json({
-      success: true,
-      message: isPublished
-        ? "Course published successfully."
-        : "Course unpublished successfully.",
-      course,
-    });
+  res.status(200).json({
+    success: true,
+    message: isPublished
+      ? "Course published successfully."
+      : "Course unpublished successfully.",
+    course,
+    currentBillingPeriod,
   });
+});
 
 export const setCourseEnrollmentStatus =
   asyncHandler(async (req, res) => {

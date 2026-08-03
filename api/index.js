@@ -1,4 +1,5 @@
 import "dotenv/config";
+
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -7,9 +8,8 @@ import morgan from "morgan";
 import mongoose from "mongoose";
 
 import connectDB from "./utils/connectDB.js";
-import HttpError from "./utils/HttpError.js";
+import asyncHandler from "./utils/asyncHandler.js";
 
-// Import scheduled jobs for automatic billing period generation
 import {
   runBillingGenerationOnStartup,
   scheduleMonthlyBillingGeneration,
@@ -22,7 +22,27 @@ import {
   protect,
 } from "./middlewares/authMiddleware.js";
 
-import asyncHandler from "./utils/asyncHandler.js";
+import {
+  corsOptions,
+  getTrustProxySetting,
+  globalApiRateLimiter,
+  rejectDangerousInput,
+  requestIdMiddleware,
+  verifyRequestOrigin,
+} from "./middlewares/securityMiddleware.js";
+
+import {
+  errorHandler,
+  notFound,
+} from "./middlewares/errorMiddleware.js";
+
+import {
+  validateEnvironment,
+} from "./utils/validateEnvironment.js";
+
+/*
+ * Routes
+ */
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
@@ -33,127 +53,269 @@ import lessonRoutes from "./routes/lessonRoutes.js";
 import playbackRoutes from "./routes/playbackRoutes.js";
 import liveClassRoutes from "./routes/liveClassRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
-
-import verifyRequestOrigin from "./middlewares/originMiddleware.js";
-import { apiLimiter } from "./middlewares/rateLimiters.js";
-import {
-  errorHandler,
-  notFound,
-} from "./middlewares/errorMiddleware.js";
-
-const app = express();
-const port = Number(process.env.PORT || 5000);
-
-const allowedOrigins = (process.env.CLIENT_URL || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+import notificationRoutes from "./routes/notificationRoutes.js";
+import auditLogRoutes from "./routes/auditLogRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import platformSettingRoutes from "./routes/platformSettingRoutes.js";
 
 /*
- * Oracle deployment will use Nginx as a reverse proxy.
- * Trust only the first proxy in production.
+ * Validate required environment variables
+ * before connecting to external services.
  */
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
-}
+validateEnvironment();
+
+const app = express();
+
+const port = Number(
+  process.env.PORT || 5000
+);
+
+/*
+ * Oracle production will normally use
+ * Nginx as one reverse proxy.
+ */
+app.set(
+  "trust proxy",
+  getTrustProxySetting()
+);
+
+/*
+ * Prevent nested query objects such as:
+ * ?email[$ne]=value
+ */
+app.set(
+  "query parser",
+  "simple"
+);
 
 app.disable("x-powered-by");
 
-app.use(helmet());
+/*
+ * Request ID should be created early so
+ * security and error responses can include it.
+ */
+app.use(requestIdMiddleware);
+
+const helmetOptions = {
+  crossOriginResourcePolicy: {
+    policy: "same-site",
+  },
+};
+
+if (
+  process.env.NODE_ENV !==
+  "production"
+) {
+  /*
+   * Avoid HSTS caching on localhost.
+   */
+  helmetOptions.strictTransportSecurity =
+    false;
+}
 
 app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+  helmet(helmetOptions)
+);
 
-      return callback(
-        new HttpError(403, "This origin is not permitted by the API.")
-      );
-    },
-    credentials: true,
+app.use(
+  cors(corsOptions)
+);
+
+/*
+ * Reject browser write requests from
+ * origins not listed in CLIENT_ORIGINS.
+ */
+app.use(
+  verifyRequestOrigin
+);
+
+/*
+ * Apply one global API limiter.
+ * Do not also add the old apiLimiter.
+ */
+app.use(
+  "/api",
+  globalApiRateLimiter
+);
+
+app.use(
+  express.json({
+    limit:
+      process.env
+        .REQUEST_BODY_LIMIT ||
+      "1mb",
   })
 );
 
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true, limit: "1mb" }));
-app.use(cookieParser());
+app.use(
+  express.urlencoded({
+    extended: false,
 
-app.use(verifyRequestOrigin);
-app.use(apiLimiter);
+    limit:
+      process.env
+        .REQUEST_BODY_LIMIT ||
+      "1mb",
+  })
+);
 
-if (process.env.NODE_ENV === "development") {
+app.use(
+  cookieParser()
+);
+
+/*
+ * Must run after body and query parsing.
+ */
+app.use(
+  rejectDangerousInput
+);
+
+if (
+  process.env.NODE_ENV ===
+  "development"
+) {
   app.use(morgan("dev"));
 }
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "EconLLS API is running.",
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-  });
-});
+/*
+ * Health endpoint
+ */
+app.get(
+  "/api/health",
+  (req, res) => {
+    res.status(200).json({
+      success: true,
 
-/**
- * TEST ENDPOINT: Trigger monthly billing period generation manually
- * This endpoint is useful for testing the billing generation logic without waiting for the scheduled time.
- * Only enable in development/staging environments for testing purposes.
+      message:
+        "EconLLS API is running.",
+
+      environment:
+        process.env.NODE_ENV,
+
+      timestamp:
+        new Date().toISOString(),
+
+      requestId: req.id,
+    });
+  }
+);
+
+/*
+ * Protected manual billing fallback.
  *
- * Usage: POST /api/admin/trigger-billing-generation
- * (In a real system, this should be protected with proper authentication/authorization)
+ * This is safe to retain in production because
+ * it requires an authenticated administrator,
+ * and billing creation is idempotent.
  */
 app.post(
   "/api/admin/trigger-billing-generation",
+
   protect,
   authorize("admin"),
+
   asyncHandler(async (req, res) => {
     const result =
       await triggerMonthlyBillingGenerationNow();
 
     res.status(200).json({
       success: result.success,
+
       message:
         "Billing-period generation completed.",
+
       data: result,
     });
   })
 );
 
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/courses", courseRoutes);
+/*
+ * API routes
+ */
+app.use(
+  "/api/auth",
+  authRoutes
+);
+
+app.use(
+  "/api/users",
+  userRoutes
+);
+
+app.use(
+  "/api/courses",
+  courseRoutes
+);
+
 app.use(
   "/api/billing-periods",
   billingPeriodRoutes
 );
 
-app.use("/api/enrollments", enrollmentRoutes);
+app.use(
+  "/api/enrollments",
+  enrollmentRoutes
+);
 
-app.use("/api/payments", paymentRoutes);
-app.use("/api/lessons", lessonRoutes);
-app.use("/api/playback", playbackRoutes);
-app.use("/api/live-classes", liveClassRoutes);
-app.use("/api/documents", documentRoutes);
+app.use(
+  "/api/payments",
+  paymentRoutes
+);
 
+app.use(
+  "/api/lessons",
+  lessonRoutes
+);
+
+app.use(
+  "/api/playback",
+  playbackRoutes
+);
+
+app.use(
+  "/api/live-classes",
+  liveClassRoutes
+);
+
+app.use(
+  "/api/documents",
+  documentRoutes
+);
+
+app.use(
+  "/api/notifications",
+  notificationRoutes
+);
+
+app.use(
+  "/api/audit-logs",
+  auditLogRoutes
+);
+
+app.use(
+  "/api/dashboard",
+  dashboardRoutes
+);
+
+app.use(
+  "/api/settings",
+  platformSettingRoutes
+);
+
+/*
+ * These must be registered after all routes.
+ */
 app.use(notFound);
 app.use(errorHandler);
 
-let server;
-let monthlyBillingJob;
+let server = null;
+let monthlyBillingJob = null;
 
 const startServer = async () => {
   try {
     await connectDB();
 
     /*
-     * Catch-up execution:
-     * If the server was offline at 00:01 on the
-     * first day, this creates any missing period.
-     *
-     * Running it repeatedly is safe because the
-     * database upsert prevents duplicates.
+     * Catch-up generation creates any missing
+     * current billing periods after downtime.
      */
     try {
       await runBillingGenerationOnStartup();
@@ -174,11 +336,23 @@ const startServer = async () => {
       );
     }
 
-    server = app.listen(port, () => {
-      console.log(
-        `EconLLS API running on port ${port}`
-      );
-    });
+    server = app.listen(
+      port,
+      () => {
+        console.log(
+          `EconLLS API running on port ${port}`
+        );
+      }
+    );
+
+    /*
+     * These properties must be assigned only
+     * after app.listen() returns the server.
+     */
+    server.requestTimeout = 120_000;
+    server.headersTimeout = 65_000;
+    server.keepAliveTimeout = 5_000;
+    server.maxHeadersCount = 100;
   } catch (error) {
     console.error(
       "Server startup failed:",
@@ -189,7 +363,17 @@ const startServer = async () => {
   }
 };
 
-const shutdown = async (signal) => {
+let isShuttingDown = false;
+
+const shutdown = async (
+  signal
+) => {
+  if (isShuttingDown) {
+    return;
+  }
+
+  isShuttingDown = true;
+
   console.log(
     `${signal} received. Shutting down...`
   );
@@ -203,19 +387,63 @@ const shutdown = async (signal) => {
     );
   }
 
-  const closeDatabase = async () => {
-    await mongoose.connection.close();
-    process.exit(0);
-  };
+  const closeDatabaseAndExit =
+    async () => {
+      try {
+        await mongoose.connection.close();
 
-  if (server) {
-    server.close(closeDatabase);
-  } else {
-    await closeDatabase();
+        console.log(
+          "MongoDB connection closed."
+        );
+
+        process.exit(0);
+      } catch (error) {
+        console.error(
+          "MongoDB shutdown failed:",
+          error.message
+        );
+
+        process.exit(1);
+      }
+    };
+
+  if (!server) {
+    await closeDatabaseAndExit();
+    return;
   }
+
+  server.close(async (error) => {
+    if (error) {
+      console.error(
+        "HTTP server shutdown failed:",
+        error.message
+      );
+    }
+
+    await closeDatabaseAndExit();
+  });
+
+  /*
+   * Force shutdown if an open connection prevents
+   * server.close() from completing.
+   */
+  setTimeout(() => {
+    console.error(
+      "Forced shutdown after timeout."
+    );
+
+    process.exit(1);
+  }, 10_000).unref();
 };
 
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+process.on(
+  "SIGTERM",
+  () => shutdown("SIGTERM")
+);
+
+process.on(
+  "SIGINT",
+  () => shutdown("SIGINT")
+);
 
 startServer();

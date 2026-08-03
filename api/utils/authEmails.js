@@ -1,79 +1,59 @@
 import { sendEmail } from "./mailer.js";
 
 const getExpiryMinutes = () => {
-  return Number(process.env.OTP_EXPIRES_MINUTES || 10);
+  const value = Number.parseInt(process.env.OTP_EXPIRES_MINUTES || "10", 10);
+  return Number.isInteger(value) && value > 0 ? value : 10;
 };
 
-const createOtpHtml = ({ title, message, otp }) => {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <div style="max-width: 500px; margin: auto; padding: 24px;">
-          <h2>${title}</h2>
+const createOtpHtml = ({ title, message, otp }) => `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${title}</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 24px; color: #1f2937;">
+    <div style="max-width: 500px; margin: 0 auto;">
+      <h2 style="margin-top: 0;">${title}</h2>
+      <p>${message}</p>
 
-          <p>${message}</p>
+      <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; padding: 16px; text-align: center; background: #f4f4f4; border-radius: 8px;">
+        ${otp}
+      </div>
 
-          <div
-            style="
-              font-size: 32px;
-              font-weight: bold;
-              letter-spacing: 8px;
-              padding: 16px;
-              text-align: center;
-              background: #f4f4f4;
-              border-radius: 8px;
-            "
-          >
-            ${otp}
-          </div>
+      <p>This code expires in ${getExpiryMinutes()} minutes.</p>
+      <p>Do not share this code with anyone.</p>
+    </div>
+  </body>
+</html>
+`;
 
-          <p>
-            This code expires in ${getExpiryMinutes()} minutes.
-          </p>
-
-          <p>
-            Do not share this code with anyone.
-          </p>
-        </div>
-      </body>
-    </html>
-  `;
-};
-
-export const sendVerificationOtpEmail = async ({
-  email,
-  otp,
-}) => {
+export const sendVerificationOtpEmail = async ({ email, otp }) => {
   const expiryMinutes = getExpiryMinutes();
 
   return sendEmail({
     to: email,
-    subject: "Verify your EconLMS account",
-    text: `Your EconLMS verification code is ${otp}. It expires in ${expiryMinutes} minutes.`,
+    subject: "Verify your EconLLS account",
+    text: `Your EconLLS verification code is ${otp}. It expires in ${expiryMinutes} minutes.`,
     html: createOtpHtml({
-      title: "Verify your EconLMS account",
-      message:
-        "Enter the following verification code to complete your registration.",
+      title: "Verify your EconLLS account",
+      message: "Enter the following verification code to complete your registration.",
       otp,
     }),
   });
 };
 
-export const sendPasswordResetOtpEmail = async ({
-  email,
-  otp,
-}) => {
+export const sendPasswordResetOtpEmail = async ({ email, otp }) => {
   const expiryMinutes = getExpiryMinutes();
 
   return sendEmail({
     to: email,
-    subject: "Reset your EconLMS password",
-    text: `Your EconLMS password reset code is ${otp}. It expires in ${expiryMinutes} minutes.`,
+    subject: "Reset your EconLLS password",
+    text: `Your EconLLS password reset code is ${otp}. It expires in ${expiryMinutes} minutes.`,
     html: createOtpHtml({
       title: "Reset your password",
-      message:
-        "Enter the following code to reset your EconLMS password.",
+      message: "Enter the following code to reset your EconLLS password.",
       otp,
     }),
   });

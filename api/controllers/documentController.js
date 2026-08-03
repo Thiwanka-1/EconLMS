@@ -9,6 +9,12 @@ import {
   uploadNicImageToDrive,
 } from "../utils/googleDrive.js";
 
+import {
+  processNicDecisionSideEffects,
+} from "../services/decisionNotificationService.js";
+
+
+
 const getStudentWithNicFile =
   async (studentId) => {
     const student =
@@ -411,6 +417,15 @@ export const updateNicVerificationStatus =
 
     await student.save();
 
+    const notificationResult =
+      await processNicDecisionSideEffects({
+        req,
+        student,
+        decision: status,
+        note:
+          student.nicVerificationNote,
+      });
+
     res.status(200).json({
       success: true,
 
@@ -428,6 +443,11 @@ export const updateNicVerificationStatus =
 
         verifiedAt:
           student.nicVerifiedAt,
+      },
+
+      notifications: {
+        processed:
+          notificationResult.success,
       },
     });
   });

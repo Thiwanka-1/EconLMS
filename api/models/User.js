@@ -224,6 +224,7 @@ authVersion: {
       transform: (_, returnedObject) => {
         delete returnedObject.password;
         delete returnedObject.__v;
+        delete returnedObject.authVersion;
         delete returnedObject.nicImageFileId;
 
         delete returnedObject.emailVerificationOtpHash;

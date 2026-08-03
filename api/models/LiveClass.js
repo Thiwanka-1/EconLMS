@@ -48,11 +48,13 @@ const liveClassSchema =
         required: true,
         unique: true,
         trim: true,
+        select: false,
       },
 
       zoomMeetingUuid: {
         type: String,
         default: null,
+        select: false,
       },
 
       startTime: {
@@ -121,6 +123,10 @@ const liveClassSchema =
       toJSON: {
         transform: (_, object) => {
           delete object.__v;
+
+          delete object.zoomMeetingId;
+          delete object.zoomMeetingUuid;
+
           return object;
         },
       },

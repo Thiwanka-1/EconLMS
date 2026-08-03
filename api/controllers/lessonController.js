@@ -23,6 +23,10 @@ import {
   getLessonViewSummary,
 } from "../utils/playback.js";
 
+import {
+  getPlatformSettings,
+} from "../utils/platformSettings.js";
+
 const getCourse = async (courseId) => {
   const course =
     await Course.findById(courseId);
@@ -129,10 +133,13 @@ export const createLesson = asyncHandler(
         billingPeriodId,
       });
 
+    const platformSettings =
+      await getPlatformSettings();
+
     const parsedMaxViews = Number(
-      maxViews ||
-        process.env
-          .DEFAULT_LESSON_MAX_VIEWS ||
+      maxViews ??
+        platformSettings.learning
+          .defaultLessonMaxViews ??
         2
     );
 

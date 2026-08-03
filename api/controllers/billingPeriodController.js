@@ -193,13 +193,11 @@ export const getAdminBillingPeriods =
       );
 
     /*
-     * Do not automatically create a new month
-     * for an archived course.
-     */
-    if (!course.isArchived) {
-      await getOrCreateCurrentBillingPeriod(
-        course
-      );
+    * Automatically generate periods only for
+    * published, non-archived monthly courses.
+    */
+    if (course.isPublished && !course.isArchived) {
+      await getOrCreateCurrentBillingPeriod(course);
     }
 
     const periods =

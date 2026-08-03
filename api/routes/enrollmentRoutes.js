@@ -22,6 +22,12 @@ import {
   uploadPaymentSlip,
 } from "../middlewares/uploadMiddleware.js";
 
+import {
+  uploadRateLimiter,
+} from "../middlewares/securityMiddleware.js";
+
+import { validatePaymentSlipSignature } from "../middlewares/uploadSignatureMiddleware.js";
+
 const router = express.Router();
 
 router.use(protect);
@@ -47,9 +53,21 @@ router.get(
 
 router.post(
   "/:courseId/payment-slip",
+
   authorize("student"),
-  validateObjectIdParam("courseId"),
-  uploadPaymentSlip.single("slip"),
+
+  validateObjectIdParam(
+    "courseId"
+  ),
+
+  uploadRateLimiter,
+
+  uploadPaymentSlip.single(
+    "slip"
+  ),
+
+  validatePaymentSlipSignature,
+
   submitPaymentSlip
 );
 

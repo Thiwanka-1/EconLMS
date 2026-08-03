@@ -3,13 +3,11 @@ import PaymentSubmission from "../models/PaymentSubmission.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
-import {
-  registerStudentForEligibleLiveClasses,
-} from "../services/zoomRegistrationService.js";
+import {registerStudentForEligibleLiveClasses} from "../services/zoomRegistrationService.js";
 
-import {
-  getDriveFileStream,
-} from "../utils/googleDrive.js";
+import {getDriveFileStream} from "../utils/googleDrive.js";
+
+import {processPaymentDecisionSideEffects} from "../services/decisionNotificationService.js";
 
 export const getMyPaymentSubmissions =
   asyncHandler(async (req, res) => {
@@ -145,13 +143,7 @@ export const getAllPaymentsAdmin =
 
 export const getPaymentAdmin =
   asyncHandler(async (req, res) => {
-    const payment =
-      await PaymentSubmission.findById(
-        req.params.id
-      )
-        .select(
-          "+driveFileId +driveParentFolderId"
-        )
+    const payment = await PaymentSubmission.findById(req.params.id)
         .populate(
           "student",
           "firstName lastName email mobileNumber nicNumber school"
@@ -329,9 +321,10 @@ export const approvePayment =
 
     payment.status = "approved";
     payment.reviewNote =
-      req.body.reviewNote || "";
-    payment.reviewedBy =
-      req.user._id;
+      typeof req.body.reviewNote === "string"
+        ? req.body.reviewNote.trim()
+        : "";
+    payment.reviewedBy = req.user._id;
     payment.reviewedAt =
       approvalDate;
     payment.approvedAt =
@@ -372,7 +365,22 @@ try {
   };
 }
 
-   res.status(200).json({
+let notificationResult = { success: false };
+
+  try {
+    notificationResult = await processPaymentDecisionSideEffects({
+      req,
+      paymentId: payment._id,
+      decision: "approved",
+    });
+  } catch (error) {
+    console.error(
+      "Payment approval notification processing failed:",
+      error.message
+    );
+  }
+
+  res.status(200).json({
       success: true,
 
       message:
@@ -382,18 +390,21 @@ try {
       enrollment,
 
       zoomRegistrationSync,
+      notifications: {
+        processed: Boolean(notificationResult?.success),
+      },
     });
   });
 
 export const rejectPayment =
   asyncHandler(async (req, res) => {
-    const { reviewNote } = req.body;
+    const reviewNote =
+      typeof req.body.reviewNote === "string"
+        ? req.body.reviewNote.trim()
+        : "";
 
-    if (!reviewNote?.trim()) {
-      throw new HttpError(
-        400,
-        "A rejection reason is required."
-      );
+    if (!reviewNote) {
+      throw new HttpError(400, "A rejection reason is required.");
     }
 
     const payment =
@@ -429,10 +440,8 @@ export const rejectPayment =
     }
 
     payment.status = "rejected";
-    payment.reviewNote =
-      reviewNote.trim();
-    payment.reviewedBy =
-      req.user._id;
+    payment.reviewNote = reviewNote;
+    payment.reviewedBy = req.user._id;
     payment.reviewedAt =
       new Date();
     payment.rejectedAt =
@@ -441,10 +450,31 @@ export const rejectPayment =
 
     await payment.save();
 
+    const rejectionReason = payment.reviewNote;
+    let notificationResult = { success: false };
+
+    try {
+      notificationResult = await processPaymentDecisionSideEffects({
+        req,
+        paymentId: payment._id,
+        decision: "rejected",
+        reason: rejectionReason,
+      });
+    } catch (error) {
+      console.error(
+        "Payment rejection notification processing failed:",
+        error.message
+      );
+    }
+
     res.status(200).json({
       success: true,
       message:
         "Payment rejected. The student may upload another slip.",
       paymentSubmission: payment,
+
+      notifications: {
+        processed: Boolean(notificationResult?.success),
+      },
     });
   });

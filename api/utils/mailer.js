@@ -1,59 +1,66 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-let transporter;
+let resendClient = null;
 
-const getTransporter = () => {
-  if (transporter) {
-    return transporter;
+const getResendClient = () => {
+  const provider = String(process.env.EMAIL_PROVIDER || "resend").trim().toLowerCase();
+
+  if (provider !== "resend") {
+    throw new Error(`Unsupported email provider: ${provider}`);
   }
 
-  const {
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_SECURE,
-    SMTP_USER,
-    SMTP_PASS,
-  } = process.env;
-
-  if (
-    !SMTP_HOST ||
-    !SMTP_PORT ||
-    !SMTP_USER ||
-    !SMTP_PASS
-  ) {
-    throw new Error("SMTP configuration is incomplete.");
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is missing.");
   }
 
-  transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: SMTP_SECURE === "true",
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
-    },
-  });
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
 
-  return transporter;
+  return resendClient;
 };
 
-export const sendEmail = async ({
-  to,
-  subject,
-  text,
-  html,
-}) => {
-  if (!process.env.SMTP_FROM) {
-    throw new Error("SMTP_FROM is missing.");
+const normalizeRecipients = (to) => {
+  const recipients = Array.isArray(to) ? to : [to];
+
+  return recipients.map((recipient) => String(recipient || "").trim()).filter(Boolean);
+};
+
+export const sendEmail = async ({ to, subject, text, html }) => {
+  const recipients = normalizeRecipients(to);
+  const from = String(process.env.EMAIL_FROM || "").trim();
+
+  if (recipients.length === 0) {
+    throw new Error("At least one email recipient is required.");
   }
 
-  const mailTransporter = getTransporter();
+  if (!from) {
+    throw new Error("EMAIL_FROM is missing.");
+  }
 
-  return mailTransporter.sendMail({
-    from: process.env.SMTP_FROM,
-    to,
+  if (!subject) {
+    throw new Error("Email subject is required.");
+  }
+
+  if (!text && !html) {
+    throw new Error("Email text or HTML content is required.");
+  }
+
+  const { data, error } = await getResendClient().emails.send({
+    from,
+    to: recipients,
     subject,
     text,
     html,
   });
+
+  if (error) {
+    throw new Error(`Resend email delivery failed: ${error.message || "Unknown Resend error."}`);
+  }
+
+  if (!data?.id) {
+    throw new Error("Resend did not return an email identifier.");
+  }
+
+  return data;
 };

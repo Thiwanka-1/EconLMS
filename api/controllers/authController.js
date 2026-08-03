@@ -19,6 +19,10 @@ import {
   sendVerificationOtpEmail,
 } from "../utils/authEmails.js";
 
+import {
+  getPlatformSettings,
+} from "../utils/platformSettings.js";
+
 const requiredStudentFields = [
   "firstName",
   "lastName",
@@ -39,59 +43,49 @@ const normalizeEmail = (email) => {
     .toLowerCase();
 };
 
-const validateNewPassword = ({
-  password,
-  confirmPassword,
-}) => {
-  if (!password || !confirmPassword) {
-    throw new HttpError(
-      400,
-      "Password and confirm password are required."
-    );
+const validateNewPassword = ({ password, confirmPassword }) => {
+  if (
+    typeof password !== "string" ||
+    typeof confirmPassword !== "string" ||
+    !password ||
+    !confirmPassword
+  ) {
+    throw new HttpError(400, "Password and confirm password are required.");
   }
 
   if (password !== confirmPassword) {
-    throw new HttpError(
-      400,
-      "Password and confirm password do not match."
-    );
+    throw new HttpError(400, "Password and confirm password do not match.");
   }
 
   if (password.length < 8) {
-    throw new HttpError(
-      400,
-      "Password must contain at least 8 characters."
-    );
+    throw new HttpError(400, "Password must contain at least 8 characters.");
+  }
+
+  if (Buffer.byteLength(password, "utf8") > 72) {
+    throw new HttpError(400, "Password must not exceed 72 bytes.");
   }
 };
 
-const checkOtpCooldown = (sentAt) => {
+const isOtpCooldownActive = (sentAt) => {
   if (!sentAt) {
-    return;
+    return false;
   }
 
-  const cooldownSeconds = Number(
-    process.env.OTP_RESEND_COOLDOWN_SECONDS || 60
+  const configuredSeconds = Number.parseInt(
+    process.env.OTP_RESEND_COOLDOWN_SECONDS || "60",
+    10
   );
 
-  const elapsedMilliseconds =
-    Date.now() - new Date(sentAt).getTime();
+  const cooldownSeconds =
+    Number.isInteger(configuredSeconds) && configuredSeconds > 0 ? configuredSeconds : 60;
 
-  const cooldownMilliseconds =
-    cooldownSeconds * 1000;
+  const sentTime = new Date(sentAt).getTime();
 
-  if (elapsedMilliseconds < cooldownMilliseconds) {
-    const remainingSeconds = Math.ceil(
-      (cooldownMilliseconds -
-        elapsedMilliseconds) /
-        1000
-    );
-
-    throw new HttpError(
-      429,
-      `Please wait ${remainingSeconds} seconds before requesting another code.`
-    );
+  if (!Number.isFinite(sentTime)) {
+    return false;
   }
+
+  return Date.now() - sentTime < cooldownSeconds * 1000;
 };
 
 const createEmailVerificationOtp = async (
@@ -162,6 +156,20 @@ export const signup = asyncHandler(
         `Missing required fields: ${missingFields.join(
           ", "
         )}`
+      );
+    }
+
+    const platformSettings =
+      await getPlatformSettings();
+
+    if (
+      !platformSettings.registration.isOpen
+    ) {
+      throw new HttpError(
+        403,
+        platformSettings.registration
+          .closedMessage ||
+          "Student registration is currently closed."
       );
     }
 
@@ -249,11 +257,8 @@ export const verifyEmail = asyncHandler(
       "+emailVerificationOtpHash +emailVerificationOtpExpiresAt"
     );
 
-    if (!user) {
-      throw new HttpError(
-        400,
-        "Invalid or expired verification code."
-      );
+    if (!user || !user.isActive) {
+      throw new HttpError(400, "Invalid or expired verification code.");
     }
 
     if (user.isEmailVerified) {
@@ -301,51 +306,43 @@ export const verifyEmail = asyncHandler(
   }
 );
 
-export const resendVerificationOtp =
-  asyncHandler(async (req, res) => {
-    const { email } = req.body;
+export const resendVerificationOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
 
-    if (!email) {
-      throw new HttpError(
-        400,
-        "Email is required."
-      );
-    }
+  if (!email) {
+    throw new HttpError(400, "Email is required.");
+  }
 
-    const user = await User.findOne({
-      email: normalizeEmail(email),
-    }).select(
-      "+emailVerificationOtpSentAt"
-    );
+  const genericMessage =
+    "If an eligible unverified account exists, a verification code will be sent.";
 
-    /*
-     * Generic response prevents exposing whether
-     * an account exists.
-     */
-    if (
-      !user ||
-      user.isEmailVerified ||
-      !user.isActive
-    ) {
-      return res.status(200).json({
-        success: true,
-        message:
-          "If an unverified account exists, a new verification code will be sent.",
-      });
-    }
+  const user = await User.findOne({
+    email: normalizeEmail(email),
+  }).select("+emailVerificationOtpSentAt");
 
-    checkOtpCooldown(
-      user.emailVerificationOtpSentAt
-    );
-
-    await createEmailVerificationOtp(user);
-
-    res.status(200).json({
+  if (
+    !user ||
+    !user.isActive ||
+    user.isEmailVerified ||
+    isOtpCooldownActive(user.emailVerificationOtpSentAt)
+  ) {
+    return res.status(200).json({
       success: true,
-      message:
-        "A new verification code has been sent.",
+      message: genericMessage,
     });
+  }
+
+  try {
+    await createEmailVerificationOtp(user);
+  } catch (error) {
+    console.error("Verification email resend failed:", error.message);
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: genericMessage,
   });
+});
 
 export const login = asyncHandler(
   async (req, res) => {
@@ -414,47 +411,38 @@ export const logout = asyncHandler(
   }
 );
 
-export const forgotPassword = asyncHandler(
-  async (req, res) => {
-    const { email } = req.body;
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
 
-    if (!email) {
-      throw new HttpError(
-        400,
-        "Email is required."
-      );
-    }
-
-    const user = await User.findOne({
-      email: normalizeEmail(email),
-    }).select("+passwordResetOtpSentAt");
-
-    if (
-      user &&
-      user.isActive &&
-      user.isEmailVerified
-    ) {
-      checkOtpCooldown(
-        user.passwordResetOtpSentAt
-      );
-
-      try {
-        await createPasswordResetOtp(user);
-      } catch (error) {
-        console.error(
-          "Password reset email failed:",
-          error.message
-        );
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message:
-        "If an active account exists, a password reset code will be sent.",
-    });
+  if (!email) {
+    throw new HttpError(400, "Email is required.");
   }
-);
+
+  const genericMessage =
+    "If an active account exists, a password reset code will be sent.";
+
+  const user = await User.findOne({
+    email: normalizeEmail(email),
+  }).select("+passwordResetOtpSentAt");
+
+  if (
+    user &&
+    user.isActive &&
+    user.isEmailVerified &&
+    !isOtpCooldownActive(user.passwordResetOtpSentAt)
+  ) {
+    try {
+      await createPasswordResetOtp(user);
+    } catch (error) {
+      console.error("Password reset email failed:", error.message);
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: genericMessage,
+  });
+});
 
 export const resetPassword = asyncHandler(
   async (req, res) => {

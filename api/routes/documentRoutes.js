@@ -22,6 +22,14 @@ import {
   uploadNicImage,
 } from "../middlewares/uploadMiddleware.js";
 
+import {
+  uploadRateLimiter,
+} from "../middlewares/securityMiddleware.js";
+
+import {
+  validateNicImageSignature,
+} from "../middlewares/uploadSignatureMiddleware.js";
+
 const router = express.Router();
 
 router.use(protect);
@@ -44,9 +52,15 @@ router.get(
 router.put(
   "/nic/me",
   authorize("student"),
+
+  uploadRateLimiter,
+
   uploadNicImage.single(
     "nicImage"
   ),
+
+  validateNicImageSignature,
+
   uploadMyNicImage
 );
 

@@ -69,7 +69,7 @@ router.get(
   getStudentLiveClasses
 );
 
-router.get(
+router.post(
   "/:id/join",
   authorize("student"),
   validateObjectIdParam("id"),

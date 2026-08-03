@@ -34,6 +34,7 @@ const zoomRegistrationSchema =
       zoomMeetingId: {
         type: String,
         required: true,
+        select: false,
       },
 
       zoomEmail: {
@@ -92,6 +93,7 @@ const zoomRegistrationSchema =
       toJSON: {
         transform: (_, object) => {
           delete object.__v;
+          delete object.zoomMeetingId;
           delete object.encryptedJoinUrl;
 
           return object;
