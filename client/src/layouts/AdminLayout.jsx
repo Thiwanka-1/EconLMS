@@ -1,4 +1,4 @@
-﻿import AppShell from "../components/common/AppShell.jsx";
+import AppShell from "../components/common/AppShell.jsx";
 
 export default function AdminLayout() {
   return (
@@ -9,6 +9,18 @@ export default function AdminLayout() {
           to: "/admin",
           label: "Dashboard",
           end: true,
+        },
+        {
+          to: "/admin/courses",
+          label: "Courses",
+        },
+        {
+          to: "/admin/payments",
+          label: "Payments",
+        },
+        {
+          to: "/admin/students",
+          label: "Students",
         },
       ]}
     />

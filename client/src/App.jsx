@@ -7,7 +7,12 @@ import AdminLayout from "./layouts/AdminLayout.jsx";
 import PublicLayout from "./layouts/PublicLayout.jsx";
 import StudentLayout from "./layouts/StudentLayout.jsx";
 
+import AdminCoursePage from "./pages/admin/AdminCoursePage.jsx";
+import AdminCoursesPage from "./pages/admin/AdminCoursesPage.jsx";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
+import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage.jsx";
+import AdminStudentPage from "./pages/admin/AdminStudentPage.jsx";
+import AdminStudentsPage from "./pages/admin/AdminStudentsPage.jsx";
 
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage.jsx";
 import LoginPage from "./pages/auth/LoginPage.jsx";
@@ -172,6 +177,41 @@ export default function App() {
             path="/admin"
             element={
               <AdminDashboardPage />
+            }
+          />
+
+          <Route
+            path="/admin/courses"
+            element={
+              <AdminCoursesPage />
+            }
+          />
+
+          <Route
+            path="/admin/courses/:courseId"
+            element={
+              <AdminCoursePage />
+            }
+          />
+
+          <Route
+            path="/admin/payments"
+            element={
+              <AdminPaymentsPage />
+            }
+          />
+
+          <Route
+            path="/admin/students"
+            element={
+              <AdminStudentsPage />
+            }
+          />
+
+          <Route
+            path="/admin/students/:studentId"
+            element={
+              <AdminStudentPage />
             }
           />
         </Route>
