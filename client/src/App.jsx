@@ -18,8 +18,11 @@ import VerifyEmailPage from "./pages/auth/VerifyEmailPage.jsx";
 import HomePage from "./pages/public/HomePage.jsx";
 import NotFoundPage from "./pages/public/NotFoundPage.jsx";
 
+import StudentCoursePage from "./pages/student/StudentCoursePage.jsx";
+import StudentCoursesPage from "./pages/student/StudentCoursesPage.jsx";
 import StudentDashboardPage from "./pages/student/StudentDashboardPage.jsx";
 import StudentNicPage from "./pages/student/StudentNicPage.jsx";
+import StudentPaymentsPage from "./pages/student/StudentPaymentsPage.jsx";
 import StudentProfilePage from "./pages/student/StudentProfilePage.jsx";
 import StudentSecurityPage from "./pages/student/StudentSecurityPage.jsx";
 
@@ -90,6 +93,27 @@ export default function App() {
             path="/student"
             element={
               <StudentDashboardPage />
+            }
+          />
+
+          <Route
+            path="/student/courses"
+            element={
+              <StudentCoursesPage />
+            }
+          />
+
+          <Route
+            path="/student/courses/:identifier"
+            element={
+              <StudentCoursePage />
+            }
+          />
+
+          <Route
+            path="/student/payments"
+            element={
+              <StudentPaymentsPage />
             }
           />
 

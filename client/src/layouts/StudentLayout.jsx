@@ -11,6 +11,14 @@ export default function StudentLayout() {
           end: true,
         },
         {
+          to: "/student/courses",
+          label: "Courses",
+        },
+        {
+          to: "/student/payments",
+          label: "Payments",
+        },
+        {
           to: "/student/profile",
           label: "Profile",
         },
