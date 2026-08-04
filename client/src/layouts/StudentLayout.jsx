@@ -23,6 +23,10 @@ export default function StudentLayout() {
           label: "Payments",
         },
         {
+          to: "/student/notifications",
+          label: "Notifications",
+        },
+        {
           to: "/student/profile",
           label: "Profile",
         },

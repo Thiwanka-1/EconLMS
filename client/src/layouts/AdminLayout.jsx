@@ -15,12 +15,32 @@ export default function AdminLayout() {
           label: "Courses",
         },
         {
+          to: "/admin/enrollments",
+          label: "Enrolments",
+        },
+        {
+          to: "/admin/live-classes",
+          label: "Live classes",
+        },
+        {
           to: "/admin/payments",
           label: "Payments",
         },
         {
           to: "/admin/students",
           label: "Students",
+        },
+        {
+          to: "/admin/notifications",
+          label: "Notifications",
+        },
+        {
+          to: "/admin/audit-logs",
+          label: "Audit logs",
+        },
+        {
+          to: "/admin/settings",
+          label: "Settings",
         },
       ]}
     />

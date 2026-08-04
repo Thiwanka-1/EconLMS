@@ -7,10 +7,14 @@ import AdminLayout from "./layouts/AdminLayout.jsx";
 import PublicLayout from "./layouts/PublicLayout.jsx";
 import StudentLayout from "./layouts/StudentLayout.jsx";
 
+import AdminAuditLogsPage from "./pages/admin/AdminAuditLogsPage.jsx";
 import AdminCoursePage from "./pages/admin/AdminCoursePage.jsx";
 import AdminCoursesPage from "./pages/admin/AdminCoursesPage.jsx";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
+import AdminEnrollmentsPage from "./pages/admin/AdminEnrollmentsPage.jsx";
+import AdminLiveClassesPage from "./pages/admin/AdminLiveClassesPage.jsx";
 import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage.jsx";
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage.jsx";
 import AdminStudentPage from "./pages/admin/AdminStudentPage.jsx";
 import AdminStudentsPage from "./pages/admin/AdminStudentsPage.jsx";
 
@@ -22,6 +26,8 @@ import VerifyEmailPage from "./pages/auth/VerifyEmailPage.jsx";
 
 import HomePage from "./pages/public/HomePage.jsx";
 import NotFoundPage from "./pages/public/NotFoundPage.jsx";
+
+import NotificationsPage from "./pages/shared/NotificationsPage.jsx";
 
 import StudentCoursePage from "./pages/student/StudentCoursePage.jsx";
 import StudentCoursesPage from "./pages/student/StudentCoursesPage.jsx";
@@ -139,6 +145,13 @@ export default function App() {
           />
 
           <Route
+            path="/student/notifications"
+            element={
+              <NotificationsPage />
+            }
+          />
+
+          <Route
             path="/student/profile"
             element={
               <StudentProfilePage />
@@ -195,6 +208,20 @@ export default function App() {
           />
 
           <Route
+            path="/admin/enrollments"
+            element={
+              <AdminEnrollmentsPage />
+            }
+          />
+
+          <Route
+            path="/admin/live-classes"
+            element={
+              <AdminLiveClassesPage />
+            }
+          />
+
+          <Route
             path="/admin/payments"
             element={
               <AdminPaymentsPage />
@@ -212,6 +239,27 @@ export default function App() {
             path="/admin/students/:studentId"
             element={
               <AdminStudentPage />
+            }
+          />
+
+          <Route
+            path="/admin/notifications"
+            element={
+              <NotificationsPage />
+            }
+          />
+
+          <Route
+            path="/admin/audit-logs"
+            element={
+              <AdminAuditLogsPage />
+            }
+          />
+
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminSettingsPage />
             }
           />
         </Route>
