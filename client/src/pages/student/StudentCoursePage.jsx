@@ -1,4 +1,4 @@
-﻿import {
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -481,6 +481,26 @@ export default function StudentCoursePage() {
               : undefined
           }
         />
+      </div>
+
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link
+          to={`/student/lessons/${encodeURIComponent(
+            course._id
+          )}`}
+          className="rounded-2xl bg-brand-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
+        >
+          Open lessons
+        </Link>
+
+        <Link
+          to={`/student/live-classes?courseId=${encodeURIComponent(
+            course._id
+          )}`}
+          className="rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-black text-slate-800 transition hover:bg-slate-100"
+        >
+          View live classes
+        </Link>
       </div>
 
       <div className="mt-8 space-y-4">

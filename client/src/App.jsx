@@ -1,4 +1,4 @@
-﻿import {
+import {
   Route,
   Routes,
 } from "react-router";
@@ -21,6 +21,8 @@ import NotFoundPage from "./pages/public/NotFoundPage.jsx";
 import StudentCoursePage from "./pages/student/StudentCoursePage.jsx";
 import StudentCoursesPage from "./pages/student/StudentCoursesPage.jsx";
 import StudentDashboardPage from "./pages/student/StudentDashboardPage.jsx";
+import StudentLessonsPage from "./pages/student/StudentLessonsPage.jsx";
+import StudentLiveClassesPage from "./pages/student/StudentLiveClassesPage.jsx";
 import StudentNicPage from "./pages/student/StudentNicPage.jsx";
 import StudentPaymentsPage from "./pages/student/StudentPaymentsPage.jsx";
 import StudentProfilePage from "./pages/student/StudentProfilePage.jsx";
@@ -107,6 +109,20 @@ export default function App() {
             path="/student/courses/:identifier"
             element={
               <StudentCoursePage />
+            }
+          />
+
+          <Route
+            path="/student/lessons/:courseId"
+            element={
+              <StudentLessonsPage />
+            }
+          />
+
+          <Route
+            path="/student/live-classes"
+            element={
+              <StudentLiveClassesPage />
             }
           />
 

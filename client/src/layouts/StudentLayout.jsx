@@ -1,4 +1,4 @@
-﻿import AppShell from "../components/common/AppShell.jsx";
+import AppShell from "../components/common/AppShell.jsx";
 
 export default function StudentLayout() {
   return (
@@ -13,6 +13,10 @@ export default function StudentLayout() {
         {
           to: "/student/courses",
           label: "Courses",
+        },
+        {
+          to: "/student/live-classes",
+          label: "Live classes",
         },
         {
           to: "/student/payments",
