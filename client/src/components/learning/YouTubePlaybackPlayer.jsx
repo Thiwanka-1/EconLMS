@@ -12,6 +12,8 @@ import {
   sendPlaybackHeartbeat,
 } from "../../api/playbackApi.js";
 
+import { useAuth } from "../../auth/useAuth.js";
+
 import { loadYouTubeIframeApi } from "../../utils/youtubeApi.js";
 
 import StatusMessage from "../common/StatusMessage.jsx";
@@ -49,6 +51,29 @@ const formatDuration = (seconds) => {
 
 const clamp = (value, minimum, maximum) =>
   Math.min(Math.max(Number(value) || 0, minimum), maximum);
+
+const WATERMARK_POSITIONS = [
+  "left-[4%] top-[24%]",
+  "right-[4%] top-[24%]",
+  "left-[4%] top-1/2 -translate-y-1/2",
+  "right-[4%] top-1/2 -translate-y-1/2",
+  "bottom-[7%] left-[4%]",
+  "bottom-[7%] right-[4%]",
+];
+
+const getShortIdentifier = (value, { fromEnd = false } = {}) => {
+  const normalizedValue = String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+
+  if (!normalizedValue) {
+    return "UNAVAILABLE";
+  }
+
+  return fromEnd
+    ? normalizedValue.slice(-8)
+    : normalizedValue.slice(0, 8);
+};
 
 function PlayIcon({ isPlaying }) {
   if (isPlaying) {
@@ -104,6 +129,7 @@ export default function YouTubePlaybackPlayer({
   onFinished,
   onSessionInvalid,
 }) {
+  const { user } = useAuth();
   const reactId = useId();
 
   const playerElementId = useMemo(
@@ -147,6 +173,33 @@ export default function YouTubePlaybackPlayer({
   const [durationSeconds, setDurationSeconds] = useState(
     initialDurationSeconds,
   );
+  const [watermarkPositionIndex, setWatermarkPositionIndex] = useState(0);
+
+  const watermarkName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    "Student";
+  const watermarkEmail =
+    String(user?.email || "Email unavailable").trim().toLowerCase();
+  const watermarkStudentId = getShortIdentifier(user?._id, {
+    fromEnd: true,
+  });
+  const watermarkSessionId = getShortIdentifier(playbackSession.sessionId);
+
+  useEffect(() => {
+    if (!isReady) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setWatermarkPositionIndex(
+        (currentIndex) => (currentIndex + 1) % WATERMARK_POSITIONS.length,
+      );
+    }, 5000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isReady]);
 
   const updateStoredMetrics = useCallback(({ watched, duration }) => {
     watchedSecondsRef.current = watched;
@@ -769,6 +822,23 @@ export default function YouTubePlaybackPlayer({
                   className="pointer-events-auto absolute bottom-0 right-0 z-20 h-[clamp(64px,32%,160px)] w-[55%] cursor-default touch-none bg-transparent"
                 />
               </>
+            )}
+
+            {isReady && (
+              <div
+                aria-hidden="true"
+                className={`pointer-events-none absolute z-[25] max-w-[72%] select-none px-1 py-0.5 text-white opacity-40 [text-shadow:0_1px_3px_rgb(0_0_0/1),0_0_1px_rgb(0_0_0/1)] ${WATERMARK_POSITIONS[watermarkPositionIndex]}`}
+              >
+                <p className="truncate text-[11px] font-black leading-tight sm:text-xs lg:text-sm">
+                  {watermarkName}
+                </p>
+                <p className="break-all text-[10px] font-bold leading-tight sm:text-[11px] lg:text-xs">
+                  {watermarkEmail}
+                </p>
+                <p className="mt-0.5 text-[8px] font-bold uppercase tracking-wide sm:text-[9px] lg:text-[10px]">
+                  ID {watermarkStudentId} · Session {watermarkSessionId}
+                </p>
+              </div>
             )}
 
             {!isReady && (
