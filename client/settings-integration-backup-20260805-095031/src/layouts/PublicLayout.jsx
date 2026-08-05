@@ -1,4 +1,4 @@
-import {
+﻿import {
   Link,
   Outlet,
 } from "react-router";
@@ -6,17 +6,6 @@ import {
 import {
   useAuth,
 } from "../auth/useAuth.js";
-
-import MaintenanceBanner from "../components/common/MaintenanceBanner.jsx";
-import SupportFooter from "../components/common/SupportFooter.jsx";
-
-import {
-  usePlatformSettings,
-} from "../settings/usePlatformSettings.js";
-
-import {
-  getBrandInitials,
-} from "../utils/branding.js";
 
 import {
   getRoleHome,
@@ -28,20 +17,8 @@ export default function PublicLayout() {
     status,
   } = useAuth();
 
-  const {
-    settings,
-  } = usePlatformSettings();
-
-  const {
-    platformName,
-    tagline,
-  } = settings.branding;
-
-  const registrationOpen =
-    settings.registration.isOpen;
-
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="min-h-screen bg-white">
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link
@@ -49,21 +26,17 @@ export default function PublicLayout() {
             className="flex items-center gap-3"
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-sm font-black text-white shadow-sm">
-              {getBrandInitials(
-                platformName
-              )}
+              EL
             </span>
 
             <span>
               <span className="block text-lg font-black tracking-tight text-slate-950">
-                {platformName}
+                EconLLS
               </span>
 
-              {tagline && (
-                <span className="hidden text-xs font-medium text-slate-500 sm:block">
-                  {tagline}
-                </span>
-              )}
+              <span className="hidden text-xs font-medium text-slate-500 sm:block">
+                Economics Learning Portal
+              </span>
             </span>
           </Link>
 
@@ -89,16 +62,9 @@ export default function PublicLayout() {
 
                   <Link
                     to="/signup"
-                    className={[
-                      "rounded-xl px-4 py-2.5 text-sm font-bold transition",
-                      registrationOpen
-                        ? "bg-slate-950 text-white hover:bg-slate-800"
-                        : "bg-amber-100 text-amber-900 hover:bg-amber-200",
-                    ].join(" ")}
+                    className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
                   >
-                    {registrationOpen
-                      ? "Create account"
-                      : "Registration closed"}
+                    Create account
                   </Link>
                 </>
               )}
@@ -107,13 +73,7 @@ export default function PublicLayout() {
         </div>
       </header>
 
-      <MaintenanceBanner />
-
-      <div className="flex-1">
-        <Outlet />
-      </div>
-
-      <SupportFooter />
+      <Outlet />
     </div>
   );
 }

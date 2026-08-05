@@ -1,14 +1,6 @@
-import {
+﻿import {
   Link,
 } from "react-router";
-
-import {
-  usePlatformSettings,
-} from "../../settings/usePlatformSettings.js";
-
-import {
-  getBrandInitials,
-} from "../../utils/branding.js";
 
 export default function AuthPageShell({
   eyebrow,
@@ -17,15 +9,6 @@ export default function AuthPageShell({
   children,
   footer,
 }) {
-  const {
-    settings,
-  } = usePlatformSettings();
-
-  const {
-    platformName,
-    tagline,
-  } = settings.branding;
-
   return (
     <main className="grid min-h-[calc(100vh-77px)] bg-slate-50 lg:grid-cols-[0.82fr_1.18fr]">
       <section className="hidden overflow-hidden bg-slate-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
@@ -38,7 +21,7 @@ export default function AuthPageShell({
 
         <div className="max-w-lg">
           <p className="text-sm font-black uppercase tracking-[0.2em] text-brand-300">
-            {platformName}
+            EconLLS
           </p>
 
           <h1 className="mt-6 text-5xl font-black tracking-[-0.04em]">
@@ -55,10 +38,7 @@ export default function AuthPageShell({
         </div>
 
         <p className="text-sm text-slate-500">
-          {platformName}
-          {tagline
-            ? ` · ${tagline}`
-            : ""}
+          EconLLS Economics Learning Portal
         </p>
       </section>
 
@@ -69,13 +49,11 @@ export default function AuthPageShell({
             className="mb-10 inline-flex items-center gap-3 lg:hidden"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-sm font-black text-white">
-              {getBrandInitials(
-                platformName
-              )}
+              EL
             </span>
 
             <span className="font-black text-slate-950">
-              {platformName}
+              EconLLS
             </span>
           </Link>
 

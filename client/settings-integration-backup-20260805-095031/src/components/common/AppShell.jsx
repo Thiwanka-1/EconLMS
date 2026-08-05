@@ -1,4 +1,4 @@
-import {
+﻿import {
   useState,
 } from "react";
 
@@ -12,20 +12,7 @@ import {
   useAuth,
 } from "../../auth/useAuth.js";
 
-import {
-  usePlatformSettings,
-} from "../../settings/usePlatformSettings.js";
-
-import {
-  getBrandInitials,
-} from "../../utils/branding.js";
-
-import MaintenanceBanner from "./MaintenanceBanner.jsx";
-import SupportFooter from "./SupportFooter.jsx";
-
-const getUserInitials = (
-  user
-) => {
+const getInitials = (user) => {
   const first =
     user?.firstName?.[0] || "";
 
@@ -47,17 +34,10 @@ export default function AppShell({
     logout,
   } = useAuth();
 
-  const {
-    settings,
-  } = usePlatformSettings();
-
   const [
     isLoggingOut,
     setIsLoggingOut,
   ] = useState(false);
-
-  const platformName =
-    settings.branding.platformName;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -75,7 +55,7 @@ export default function AppShell({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link
@@ -83,14 +63,12 @@ export default function AppShell({
             className="flex items-center gap-3"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-sm font-black text-white shadow-sm">
-              {getBrandInitials(
-                platformName
-              )}
+              EL
             </span>
 
             <span>
               <span className="block text-base font-black tracking-tight text-slate-950">
-                {platformName}
+                EconLLS
               </span>
 
               <span className="block text-xs font-medium text-slate-500">
@@ -99,10 +77,7 @@ export default function AppShell({
             </span>
           </Link>
 
-          <nav
-            aria-label={`${portalLabel} navigation`}
-            className="order-3 flex w-full gap-1 overflow-x-auto border-t border-slate-100 pt-3 sm:order-2 sm:ml-5 sm:w-auto sm:border-0 sm:pt-0"
-          >
+          <nav className="order-3 flex w-full gap-1 overflow-x-auto border-t border-slate-100 pt-3 sm:order-2 sm:ml-5 sm:w-auto sm:border-0 sm:pt-0">
             {navItems.map(
               (item) => (
                 <NavLink
@@ -139,7 +114,7 @@ export default function AppShell({
             </div>
 
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
-              {getUserInitials(user)}
+              {getInitials(user)}
             </div>
 
             <button
@@ -156,13 +131,9 @@ export default function AppShell({
         </div>
       </header>
 
-      <MaintenanceBanner />
-
-      <main className="flex-1">
+      <main>
         <Outlet />
       </main>
-
-      <SupportFooter />
     </div>
   );
 }

@@ -1,24 +1,8 @@
-import {
+﻿import {
   Link,
 } from "react-router";
 
-import {
-  usePlatformSettings,
-} from "../../settings/usePlatformSettings.js";
-
 export default function HomePage() {
-  const {
-    settings,
-  } = usePlatformSettings();
-
-  const {
-    platformName,
-    tagline,
-  } = settings.branding;
-
-  const registrationOpen =
-    settings.registration.isOpen;
-
   return (
     <main>
       <section className="relative overflow-hidden">
@@ -27,8 +11,7 @@ export default function HomePage() {
         <div className="relative mx-auto grid min-h-[calc(100vh-77px)] max-w-7xl items-center gap-16 px-4 py-20 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8">
           <div>
             <span className="inline-flex rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-brand-700">
-              {tagline ||
-                "Learn economics with clarity"}
+              Learn economics with clarity
             </span>
 
             <h1 className="mt-7 max-w-4xl text-5xl font-black tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-7xl">
@@ -50,17 +33,8 @@ export default function HomePage() {
                 to="/login"
                 className="rounded-2xl bg-brand-600 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
               >
-                Sign in to {platformName}
+                Sign in to EconLLS
               </Link>
-
-              {registrationOpen && (
-                <Link
-                  to="/signup"
-                  className="rounded-2xl border border-slate-300 bg-white px-7 py-3.5 text-sm font-black text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
-                >
-                  Create student account
-                </Link>
-              )}
 
               <a
                 href="#features"
@@ -81,7 +55,7 @@ export default function HomePage() {
                     </p>
 
                     <p className="mt-1 text-2xl font-black">
-                      Welcome to {platformName}
+                      Welcome to EconLLS
                     </p>
                   </div>
 
@@ -90,24 +64,38 @@ export default function HomePage() {
 
                 <div className="mt-8 grid grid-cols-2 gap-3">
                   {[
-                    ["Active courses", "04"],
-                    ["Upcoming classes", "02"],
-                    ["New notifications", "05"],
-                    ["Pending payments", "01"],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="rounded-2xl border border-white/10 bg-white/5 p-4"
-                    >
-                      <p className="text-xs font-medium text-slate-400">
-                        {label}
-                      </p>
+                    [
+                      "Active courses",
+                      "04",
+                    ],
+                    [
+                      "Upcoming classes",
+                      "02",
+                    ],
+                    [
+                      "New notifications",
+                      "05",
+                    ],
+                    [
+                      "Pending payments",
+                      "01",
+                    ],
+                  ].map(
+                    ([label, value]) => (
+                      <div
+                        key={label}
+                        className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                      >
+                        <p className="text-xs font-medium text-slate-400">
+                          {label}
+                        </p>
 
-                      <p className="mt-2 text-2xl font-black">
-                        {value}
-                      </p>
-                    </div>
-                  ))}
+                        <p className="mt-2 text-2xl font-black">
+                          {value}
+                        </p>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 
@@ -116,26 +104,31 @@ export default function HomePage() {
                   "Monthly economics lesson",
                   "Live class access",
                   "Secure payment approval",
-                ].map((item, index) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4"
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-sm font-black text-brand-700">
-                      0{index + 1}
-                    </span>
+                ].map(
+                  (
+                    item,
+                    index
+                  ) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-sm font-black text-brand-700">
+                        0{index + 1}
+                      </span>
 
-                    <div>
-                      <p className="font-bold text-slate-900">
-                        {item}
-                      </p>
+                      <div>
+                        <p className="font-bold text-slate-900">
+                          {item}
+                        </p>
 
-                      <p className="text-sm text-slate-500">
-                        Available from your personal portal
-                      </p>
+                        <p className="text-sm text-slate-500">
+                          Available from your personal portal
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -149,17 +142,20 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-20 sm:px-6 md:grid-cols-3 lg:px-8">
           {[
             {
-              title: "Recorded lessons",
+              title:
+                "Recorded lessons",
               description:
                 "Watch published economics lessons through controlled student access.",
             },
             {
-              title: "Live learning",
+              title:
+                "Live learning",
               description:
                 "View upcoming classes and access registered live sessions securely.",
             },
             {
-              title: "Clear updates",
+              title:
+                "Clear updates",
               description:
                 "Receive payment, NIC verification and course notifications in one place.",
             },

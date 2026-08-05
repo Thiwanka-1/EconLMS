@@ -41,10 +41,6 @@ import StatusMessage from "../../components/common/StatusMessage.jsx";
 import FormField from "../../components/forms/FormField.jsx";
 
 import {
-  usePlatformSettings,
-} from "../../settings/usePlatformSettings.js";
-
-import {
   formatCurrency,
   formatDateTime,
 } from "../../utils/formatters.js";
@@ -261,18 +257,16 @@ const createPeriodEditForm = (
     ),
 });
 
-const createEmptyLessonForm = (
-  defaultMaxViews = 2
-) => ({
+const emptyLessonForm = {
   title: "",
   description: "",
   youtubeVideo: "",
   billingPeriodId: "",
   lessonOrder: "0",
-  maxViews: String(defaultMaxViews),
+  maxViews: "2",
   publishAt: "",
   isPublished: false,
-});
+};
 
 const createLessonEditForm = (
   lesson
@@ -317,14 +311,6 @@ export default function AdminCoursePage() {
     courseId,
   } = useParams();
 
-  const {
-    settings,
-  } = usePlatformSettings();
-
-  const defaultLessonMaxViews =
-    settings.learning
-      .defaultLessonMaxViews;
-
   const [course, setCourse] =
     useState(null);
 
@@ -358,10 +344,8 @@ export default function AdminCoursePage() {
   const [
     lessonForm,
     setLessonForm,
-  ] = useState(() =>
-    createEmptyLessonForm(
-      defaultLessonMaxViews
-    )
+  ] = useState(
+    emptyLessonForm
   );
 
   const [
@@ -443,9 +427,7 @@ export default function AdminCoursePage() {
         );
 
         setLessonForm({
-          ...createEmptyLessonForm(
-            defaultLessonMaxViews
-          ),
+          ...emptyLessonForm,
 
           billingPeriodId:
             loadedPeriods[0]?._id ||
@@ -459,10 +441,7 @@ export default function AdminCoursePage() {
       } finally {
         setIsLoading(false);
       }
-    }, [
-      courseId,
-      defaultLessonMaxViews,
-    ]);
+    }, [courseId]);
 
   useEffect(() => {
     loadCourse();
@@ -1539,9 +1518,7 @@ export default function AdminCoursePage() {
                   );
 
                   setLessonForm({
-                    ...createEmptyLessonForm(
-            defaultLessonMaxViews
-          ),
+                    ...emptyLessonForm,
 
                     billingPeriodId:
                       billingPeriods[0]?._id ||

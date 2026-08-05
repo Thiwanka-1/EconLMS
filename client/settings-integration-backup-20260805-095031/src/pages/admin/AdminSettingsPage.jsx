@@ -9,10 +9,6 @@ import {
   updateAdminPlatformSettings,
 } from "../../api/platformSettingsAdminApi.js";
 
-import {
-  usePlatformSettings,
-} from "../../settings/usePlatformSettings.js";
-
 import AdminPageHeader from "../../components/common/AdminPageHeader.jsx";
 import StatusMessage from "../../components/common/StatusMessage.jsx";
 import FormField from "../../components/forms/FormField.jsx";
@@ -196,10 +192,6 @@ const SettingsSection = ({
 };
 
 export default function AdminSettingsPage() {
-  const {
-    applySettings,
-  } = usePlatformSettings();
-
   const [form, setForm] =
     useState(emptyForm);
 
@@ -229,10 +221,6 @@ export default function AdminSettingsPage() {
         const result =
           await getAdminPlatformSettings();
 
-        applySettings(
-          result.settings
-        );
-
         setForm(
           normalizeSettings(
             result.settings
@@ -250,7 +238,7 @@ export default function AdminSettingsPage() {
       } finally {
         setIsLoading(false);
       }
-    }, [applySettings]);
+    }, []);
 
   useEffect(() => {
     loadSettings();
@@ -464,10 +452,6 @@ export default function AdminSettingsPage() {
             },
           }
         );
-
-      applySettings(
-        result.settings
-      );
 
       setForm(
         normalizeSettings(

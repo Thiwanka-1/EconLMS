@@ -1,0 +1,6140 @@
+============================================================
+FILE: package.json
+============================================================
+{
+  "name": "client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.0",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "oxlint": "^1.75.0",
+    "vite": "^8.2.0"
+  }
+}
+
+
+============================================================
+FILE: src\main.jsx
+============================================================
+import {
+  StrictMode,
+} from "react";
+
+import {
+  createRoot,
+} from "react-dom/client";
+
+import {
+  BrowserRouter,
+} from "react-router";
+
+import App from "./App.jsx";
+
+import {
+  AuthProvider,
+} from "./auth/AuthContext.jsx";
+
+import "./index.css";
+
+createRoot(
+  document.getElementById("root")
+).render(
+  <StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
+  </StrictMode>
+);
+
+
+============================================================
+FILE: src\App.jsx
+============================================================
+import {
+  Route,
+  Routes,
+} from "react-router";
+
+import AdminLayout from "./layouts/AdminLayout.jsx";
+import PublicLayout from "./layouts/PublicLayout.jsx";
+import StudentLayout from "./layouts/StudentLayout.jsx";
+
+import AdminAuditLogsPage from "./pages/admin/AdminAuditLogsPage.jsx";
+import AdminCoursePage from "./pages/admin/AdminCoursePage.jsx";
+import AdminCoursesPage from "./pages/admin/AdminCoursesPage.jsx";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
+import AdminEnrollmentsPage from "./pages/admin/AdminEnrollmentsPage.jsx";
+import AdminLiveClassesPage from "./pages/admin/AdminLiveClassesPage.jsx";
+import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage.jsx";
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage.jsx";
+import AdminStudentPage from "./pages/admin/AdminStudentPage.jsx";
+import AdminStudentsPage from "./pages/admin/AdminStudentsPage.jsx";
+
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage.jsx";
+import LoginPage from "./pages/auth/LoginPage.jsx";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage.jsx";
+import SignupPage from "./pages/auth/SignupPage.jsx";
+import VerifyEmailPage from "./pages/auth/VerifyEmailPage.jsx";
+
+import HomePage from "./pages/public/HomePage.jsx";
+import NotFoundPage from "./pages/public/NotFoundPage.jsx";
+
+import NotificationsPage from "./pages/shared/NotificationsPage.jsx";
+
+import StudentCoursePage from "./pages/student/StudentCoursePage.jsx";
+import StudentCoursesPage from "./pages/student/StudentCoursesPage.jsx";
+import StudentDashboardPage from "./pages/student/StudentDashboardPage.jsx";
+import StudentLessonsPage from "./pages/student/StudentLessonsPage.jsx";
+import StudentLiveClassesPage from "./pages/student/StudentLiveClassesPage.jsx";
+import StudentNicPage from "./pages/student/StudentNicPage.jsx";
+import StudentPaymentsPage from "./pages/student/StudentPaymentsPage.jsx";
+import StudentProfilePage from "./pages/student/StudentProfilePage.jsx";
+import StudentSecurityPage from "./pages/student/StudentSecurityPage.jsx";
+
+import GuestOnly from "./routes/GuestOnly.jsx";
+import RequireAuth from "./routes/RequireAuth.jsx";
+
+export default function App() {
+  return (
+    <Routes>
+      <Route
+        element={<PublicLayout />}
+      >
+        <Route
+          index
+          element={<HomePage />}
+        />
+
+        <Route element={<GuestOnly />}>
+          <Route
+            path="login"
+            element={<LoginPage />}
+          />
+
+          <Route
+            path="signup"
+            element={<SignupPage />}
+          />
+
+          <Route
+            path="verify-email"
+            element={<VerifyEmailPage />}
+          />
+
+          <Route
+            path="forgot-password"
+            element={
+              <ForgotPasswordPage />
+            }
+          />
+
+          <Route
+            path="reset-password"
+            element={
+              <ResetPasswordPage />
+            }
+          />
+        </Route>
+
+        <Route
+          path="*"
+          element={<NotFoundPage />}
+        />
+      </Route>
+
+      <Route
+        element={
+          <RequireAuth
+            allowedRoles={[
+              "student",
+            ]}
+          />
+        }
+      >
+        <Route
+          element={<StudentLayout />}
+        >
+          <Route
+            path="/student"
+            element={
+              <StudentDashboardPage />
+            }
+          />
+
+          <Route
+            path="/student/courses"
+            element={
+              <StudentCoursesPage />
+            }
+          />
+
+          <Route
+            path="/student/courses/:identifier"
+            element={
+              <StudentCoursePage />
+            }
+          />
+
+          <Route
+            path="/student/lessons/:courseId"
+            element={
+              <StudentLessonsPage />
+            }
+          />
+
+          <Route
+            path="/student/live-classes"
+            element={
+              <StudentLiveClassesPage />
+            }
+          />
+
+          <Route
+            path="/student/payments"
+            element={
+              <StudentPaymentsPage />
+            }
+          />
+
+          <Route
+            path="/student/notifications"
+            element={
+              <NotificationsPage />
+            }
+          />
+
+          <Route
+            path="/student/profile"
+            element={
+              <StudentProfilePage />
+            }
+          />
+
+          <Route
+            path="/student/nic"
+            element={
+              <StudentNicPage />
+            }
+          />
+
+          <Route
+            path="/student/security"
+            element={
+              <StudentSecurityPage />
+            }
+          />
+        </Route>
+      </Route>
+
+      <Route
+        element={
+          <RequireAuth
+            allowedRoles={[
+              "admin",
+            ]}
+          />
+        }
+      >
+        <Route
+          element={<AdminLayout />}
+        >
+          <Route
+            path="/admin"
+            element={
+              <AdminDashboardPage />
+            }
+          />
+
+          <Route
+            path="/admin/courses"
+            element={
+              <AdminCoursesPage />
+            }
+          />
+
+          <Route
+            path="/admin/courses/:courseId"
+            element={
+              <AdminCoursePage />
+            }
+          />
+
+          <Route
+            path="/admin/enrollments"
+            element={
+              <AdminEnrollmentsPage />
+            }
+          />
+
+          <Route
+            path="/admin/live-classes"
+            element={
+              <AdminLiveClassesPage />
+            }
+          />
+
+          <Route
+            path="/admin/payments"
+            element={
+              <AdminPaymentsPage />
+            }
+          />
+
+          <Route
+            path="/admin/students"
+            element={
+              <AdminStudentsPage />
+            }
+          />
+
+          <Route
+            path="/admin/students/:studentId"
+            element={
+              <AdminStudentPage />
+            }
+          />
+
+          <Route
+            path="/admin/notifications"
+            element={
+              <NotificationsPage />
+            }
+          />
+
+          <Route
+            path="/admin/audit-logs"
+            element={
+              <AdminAuditLogsPage />
+            }
+          />
+
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminSettingsPage />
+            }
+          />
+        </Route>
+      </Route>
+    </Routes>
+  );
+}
+
+============================================================
+FILE: src\api\settingsApi.js
+============================================================
+import {
+  apiRequest,
+} from "./http.js";
+
+export const getPublicPlatformSettings =
+  () => {
+    return apiRequest(
+      "/settings/public"
+    );
+  };
+
+export const getStudentPlatformSettings =
+  () => {
+    return apiRequest(
+      "/settings/student"
+    );
+  };
+
+
+============================================================
+FILE: src\api\platformSettingsAdminApi.js
+============================================================
+import {
+  apiRequest,
+} from "./http.js";
+
+export const getAdminPlatformSettings =
+  () => {
+    return apiRequest(
+      "/settings/admin"
+    );
+  };
+
+export const updateAdminPlatformSettings =
+  (settings) => {
+    return apiRequest(
+      "/settings/admin",
+      {
+        method: "PATCH",
+        body: settings,
+      }
+    );
+  };
+
+============================================================
+FILE: src\auth\AuthContext.jsx
+============================================================
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  getCurrentUser,
+  loginUser,
+  logoutUser,
+  verifyEmailAddress,
+} from "../api/authApi.js";
+
+export const AuthContext =
+  createContext(null);
+
+export function AuthProvider({
+  children,
+}) {
+  const [user, setUser] =
+    useState(null);
+
+  const [status, setStatus] =
+    useState("loading");
+
+  const refreshUser =
+    useCallback(async () => {
+      const result =
+        await getCurrentUser();
+
+      setUser(result.user);
+
+      return result.user;
+    }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const restoreSession =
+      async () => {
+        try {
+          const result =
+            await getCurrentUser();
+
+          if (active) {
+            setUser(result.user);
+          }
+        } catch (error) {
+          if (
+            active &&
+            error.status !== 401 &&
+            error.status !== 403
+          ) {
+            console.error(
+              "Session restoration failed:",
+              error
+            );
+          }
+
+          if (active) {
+            setUser(null);
+          }
+        } finally {
+          if (active) {
+            setStatus("ready");
+          }
+        }
+      };
+
+    restoreSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const login = useCallback(
+    async ({
+      email,
+      password,
+    }) => {
+      const result =
+        await loginUser({
+          email,
+          password,
+        });
+
+      setUser(result.user);
+
+      return result.user;
+    },
+    []
+  );
+
+  const verifyEmail =
+    useCallback(
+      async ({
+        email,
+        otp,
+      }) => {
+        const result =
+          await verifyEmailAddress({
+            email,
+            otp,
+          });
+
+        setUser(result.user);
+
+        return result.user;
+      },
+      []
+    );
+
+  const logout = useCallback(
+    async () => {
+      try {
+        await logoutUser();
+      } finally {
+        setUser(null);
+      }
+    },
+    []
+  );
+
+  const value = useMemo(
+    () => ({
+      user,
+      status,
+
+      isAuthenticated:
+        Boolean(user),
+
+      login,
+      verifyEmail,
+      refreshUser,
+      logout,
+    }),
+    [
+      user,
+      status,
+      login,
+      verifyEmail,
+      refreshUser,
+      logout,
+    ]
+  );
+
+  return (
+    <AuthContext.Provider
+      value={value}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+
+============================================================
+FILE: src\components\common\AppShell.jsx
+============================================================
+import {
+  useState,
+} from "react";
+
+import {
+  Link,
+  NavLink,
+  Outlet,
+} from "react-router";
+
+import {
+  useAuth,
+} from "../../auth/useAuth.js";
+
+const getInitials = (user) => {
+  const first =
+    user?.firstName?.[0] || "";
+
+  const last =
+    user?.lastName?.[0] || "";
+
+  return (
+    `${first}${last}`.toUpperCase() ||
+    "U"
+  );
+};
+
+export default function AppShell({
+  portalLabel,
+  navItems,
+}) {
+  const {
+    user,
+    logout,
+  } = useAuth();
+
+  const [
+    isLoggingOut,
+    setIsLoggingOut,
+  ] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+    } catch (error) {
+      console.error(
+        "Logout failed:",
+        error
+      );
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <Link
+            to="/"
+            className="flex items-center gap-3"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-sm font-black text-white shadow-sm">
+              EL
+            </span>
+
+            <span>
+              <span className="block text-base font-black tracking-tight text-slate-950">
+                EconLLS
+              </span>
+
+              <span className="block text-xs font-medium text-slate-500">
+                {portalLabel}
+              </span>
+            </span>
+          </Link>
+
+          <nav className="order-3 flex w-full gap-1 overflow-x-auto border-t border-slate-100 pt-3 sm:order-2 sm:ml-5 sm:w-auto sm:border-0 sm:pt-0">
+            {navItems.map(
+              (item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({
+                    isActive,
+                  }) =>
+                    [
+                      "whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition",
+                      isActive
+                        ? "bg-brand-50 text-brand-700"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+                    ].join(" ")
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              )
+            )}
+          </nav>
+
+          <div className="ml-auto flex items-center gap-3">
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-bold text-slate-900">
+                {user?.firstName}{" "}
+                {user?.lastName}
+              </p>
+
+              <p className="text-xs text-slate-500">
+                {user?.email}
+              </p>
+            </div>
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
+              {getInitials(user)}
+            </div>
+
+            <button
+              type="button"
+              disabled={isLoggingOut}
+              onClick={handleLogout}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoggingOut
+                ? "Signing out…"
+                : "Sign out"}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+
+============================================================
+FILE: src\components\common\AuthPageShell.jsx
+============================================================
+import {
+  Link,
+} from "react-router";
+
+export default function AuthPageShell({
+  eyebrow,
+  title,
+  description,
+  children,
+  footer,
+}) {
+  return (
+    <main className="grid min-h-[calc(100vh-77px)] bg-slate-50 lg:grid-cols-[0.82fr_1.18fr]">
+      <section className="hidden overflow-hidden bg-slate-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <Link
+          to="/"
+          className="w-fit text-sm font-bold text-brand-300 transition hover:text-brand-200"
+        >
+          ← Return home
+        </Link>
+
+        <div className="max-w-lg">
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-brand-300">
+            EconLLS
+          </p>
+
+          <h1 className="mt-6 text-5xl font-black tracking-[-0.04em]">
+            Learn economics through one
+            secure platform.
+          </h1>
+
+          <p className="mt-6 text-lg leading-8 text-slate-300">
+            Manage lessons, payments,
+            verification, live classes and
+            learning updates through your
+            personal portal.
+          </p>
+        </div>
+
+        <p className="text-sm text-slate-500">
+          EconLLS Economics Learning Portal
+        </p>
+      </section>
+
+      <section className="flex items-start justify-center px-4 py-12 sm:px-8 lg:py-16">
+        <div className="w-full max-w-3xl">
+          <Link
+            to="/"
+            className="mb-10 inline-flex items-center gap-3 lg:hidden"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-sm font-black text-white">
+              EL
+            </span>
+
+            <span className="font-black text-slate-950">
+              EconLLS
+            </span>
+          </Link>
+
+          <p className="text-sm font-black uppercase tracking-[0.17em] text-brand-700">
+            {eyebrow}
+          </p>
+
+          <h2 className="mt-3 text-4xl font-black tracking-[-0.035em] text-slate-950">
+            {title}
+          </h2>
+
+          {description && (
+            <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+              {description}
+            </p>
+          )}
+
+          <div className="mt-8">
+            {children}
+          </div>
+
+          {footer && (
+            <div className="mt-8 border-t border-slate-200 pt-6 text-sm text-slate-600">
+              {footer}
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+
+============================================================
+FILE: src\components\common\StatusMessage.jsx
+============================================================
+const variantStyles = {
+  error:
+    "border-red-200 bg-red-50 text-red-800",
+  success:
+    "border-emerald-200 bg-emerald-50 text-emerald-800",
+  info:
+    "border-brand-200 bg-brand-50 text-brand-800",
+  warning:
+    "border-amber-200 bg-amber-50 text-amber-900",
+};
+
+export default function StatusMessage({
+  children,
+  variant = "info",
+}) {
+  if (!children) {
+    return null;
+  }
+
+  return (
+    <div
+      role={
+        variant === "error"
+          ? "alert"
+          : "status"
+      }
+      className={[
+        "rounded-2xl border px-4 py-3 text-sm font-semibold leading-6",
+        variantStyles[variant] ||
+          variantStyles.info,
+      ].join(" ")}
+    >
+      {children}
+    </div>
+  );
+}
+
+
+============================================================
+FILE: src\layouts\PublicLayout.jsx
+============================================================
+import {
+  Link,
+  Outlet,
+} from "react-router";
+
+import {
+  useAuth,
+} from "../auth/useAuth.js";
+
+import {
+  getRoleHome,
+} from "../utils/roleHome.js";
+
+export default function PublicLayout() {
+  const {
+    user,
+    status,
+  } = useAuth();
+
+  return (
+    <div className="min-h-screen bg-white">
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <Link
+            to="/"
+            className="flex items-center gap-3"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-sm font-black text-white shadow-sm">
+              EL
+            </span>
+
+            <span>
+              <span className="block text-lg font-black tracking-tight text-slate-950">
+                EconLLS
+              </span>
+
+              <span className="hidden text-xs font-medium text-slate-500 sm:block">
+                Economics Learning Portal
+              </span>
+            </span>
+          </Link>
+
+          {status !== "loading" && (
+            <div className="flex items-center gap-2">
+              {user ? (
+                <Link
+                  to={getRoleHome(
+                    user.role
+                  )}
+                  className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  Open portal
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                  >
+                    Sign in
+                  </Link>
+
+                  <Link
+                    to="/signup"
+                    className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
+                  >
+                    Create account
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <Outlet />
+    </div>
+  );
+}
+
+
+============================================================
+FILE: src\layouts\AdminLayout.jsx
+============================================================
+import AppShell from "../components/common/AppShell.jsx";
+
+export default function AdminLayout() {
+  return (
+    <AppShell
+      portalLabel="Administration"
+      navItems={[
+        {
+          to: "/admin",
+          label: "Dashboard",
+          end: true,
+        },
+        {
+          to: "/admin/courses",
+          label: "Courses",
+        },
+        {
+          to: "/admin/enrollments",
+          label: "Enrolments",
+        },
+        {
+          to: "/admin/live-classes",
+          label: "Live classes",
+        },
+        {
+          to: "/admin/payments",
+          label: "Payments",
+        },
+        {
+          to: "/admin/students",
+          label: "Students",
+        },
+        {
+          to: "/admin/notifications",
+          label: "Notifications",
+        },
+        {
+          to: "/admin/audit-logs",
+          label: "Audit logs",
+        },
+        {
+          to: "/admin/settings",
+          label: "Settings",
+        },
+      ]}
+    />
+  );
+}
+
+============================================================
+FILE: src\layouts\StudentLayout.jsx
+============================================================
+import AppShell from "../components/common/AppShell.jsx";
+
+export default function StudentLayout() {
+  return (
+    <AppShell
+      portalLabel="Student portal"
+      navItems={[
+        {
+          to: "/student",
+          label: "Dashboard",
+          end: true,
+        },
+        {
+          to: "/student/courses",
+          label: "Courses",
+        },
+        {
+          to: "/student/live-classes",
+          label: "Live classes",
+        },
+        {
+          to: "/student/payments",
+          label: "Payments",
+        },
+        {
+          to: "/student/notifications",
+          label: "Notifications",
+        },
+        {
+          to: "/student/profile",
+          label: "Profile",
+        },
+        {
+          to: "/student/nic",
+          label: "NIC document",
+        },
+        {
+          to: "/student/security",
+          label: "Security",
+        },
+      ]}
+    />
+  );
+}
+
+============================================================
+FILE: src\pages\public\HomePage.jsx
+============================================================
+import {
+  Link,
+} from "react-router";
+
+export default function HomePage() {
+  return (
+    <main>
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(43,131,255,0.16),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(15,23,42,0.08),transparent_35%)]" />
+
+        <div className="relative mx-auto grid min-h-[calc(100vh-77px)] max-w-7xl items-center gap-16 px-4 py-20 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8">
+          <div>
+            <span className="inline-flex rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-brand-700">
+              Learn economics with clarity
+            </span>
+
+            <h1 className="mt-7 max-w-4xl text-5xl font-black tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-7xl">
+              Structured learning for
+              <span className="text-brand-600">
+                {" "}better results.
+              </span>
+            </h1>
+
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
+              Access lessons, live classes,
+              payment updates and learning
+              resources through one secure
+              student portal.
+            </p>
+
+            <div className="mt-10 flex flex-wrap gap-4">
+              <Link
+                to="/login"
+                className="rounded-2xl bg-brand-600 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
+              >
+                Sign in to EconLLS
+              </Link>
+
+              <a
+                href="#features"
+                className="rounded-2xl border border-slate-300 bg-white px-7 py-3.5 text-sm font-black text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+              >
+                Explore the portal
+              </a>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-900/10">
+              <div className="rounded-[1.5rem] bg-slate-950 p-7 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-400">
+                      Student dashboard
+                    </p>
+
+                    <p className="mt-1 text-2xl font-black">
+                      Welcome to EconLLS
+                    </p>
+                  </div>
+
+                  <div className="h-12 w-12 rounded-2xl bg-brand-500" />
+                </div>
+
+                <div className="mt-8 grid grid-cols-2 gap-3">
+                  {[
+                    [
+                      "Active courses",
+                      "04",
+                    ],
+                    [
+                      "Upcoming classes",
+                      "02",
+                    ],
+                    [
+                      "New notifications",
+                      "05",
+                    ],
+                    [
+                      "Pending payments",
+                      "01",
+                    ],
+                  ].map(
+                    ([label, value]) => (
+                      <div
+                        key={label}
+                        className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                      >
+                        <p className="text-xs font-medium text-slate-400">
+                          {label}
+                        </p>
+
+                        <p className="mt-2 text-2xl font-black">
+                          {value}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {[
+                  "Monthly economics lesson",
+                  "Live class access",
+                  "Secure payment approval",
+                ].map(
+                  (
+                    item,
+                    index
+                  ) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-sm font-black text-brand-700">
+                        0{index + 1}
+                      </span>
+
+                      <div>
+                        <p className="font-bold text-slate-900">
+                          {item}
+                        </p>
+
+                        <p className="text-sm text-slate-500">
+                          Available from your personal portal
+                        </p>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="features"
+        className="border-t border-slate-200 bg-slate-50"
+      >
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-20 sm:px-6 md:grid-cols-3 lg:px-8">
+          {[
+            {
+              title:
+                "Recorded lessons",
+              description:
+                "Watch published economics lessons through controlled student access.",
+            },
+            {
+              title:
+                "Live learning",
+              description:
+                "View upcoming classes and access registered live sessions securely.",
+            },
+            {
+              title:
+                "Clear updates",
+              description:
+                "Receive payment, NIC verification and course notifications in one place.",
+            },
+          ].map((feature) => (
+            <article
+              key={feature.title}
+              className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm"
+            >
+              <div className="h-11 w-11 rounded-2xl bg-brand-100" />
+
+              <h2 className="mt-6 text-xl font-black text-slate-950">
+                {feature.title}
+              </h2>
+
+              <p className="mt-3 leading-7 text-slate-600">
+                {feature.description}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+
+============================================================
+FILE: src\pages\auth\SignupPage.jsx
+============================================================
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Link,
+  useNavigate,
+} from "react-router";
+
+import {
+  signupUser,
+} from "../../api/authApi.js";
+
+import {
+  getPublicPlatformSettings,
+} from "../../api/settingsApi.js";
+
+import AuthPageShell from "../../components/common/AuthPageShell.jsx";
+import StatusMessage from "../../components/common/StatusMessage.jsx";
+import FormField from "../../components/forms/FormField.jsx";
+import PasswordField from "../../components/forms/PasswordField.jsx";
+
+import {
+  setPendingVerificationEmail,
+} from "../../utils/authFlowStorage.js";
+
+const initialForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  zoomEmail: "",
+  mobileNumber: "",
+  nicNumber: "",
+  school: "",
+  city: "",
+  address: "",
+  password: "",
+  confirmPassword: "",
+};
+
+export default function SignupPage() {
+  const navigate =
+    useNavigate();
+
+  const [form, setForm] =
+    useState(initialForm);
+
+  const [error, setError] =
+    useState("");
+
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
+
+  const [
+    isSettingsLoading,
+    setIsSettingsLoading,
+  ] = useState(true);
+
+  const [
+    registration,
+    setRegistration,
+  ] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSettings = async () => {
+      try {
+        const result =
+          await getPublicPlatformSettings();
+
+        if (active) {
+          setRegistration(
+            result.settings
+              ?.registration || null
+          );
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(
+            requestError.message ||
+              "Registration settings could not be loaded."
+          );
+        }
+      } finally {
+        if (active) {
+          setIsSettingsLoading(false);
+        }
+      }
+    };
+
+    loadSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const registrationClosed =
+    registration?.isOpen === false;
+
+  const handleChange = (event) => {
+    const {
+      name,
+      value,
+    } = event.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    setError("");
+
+    if (
+      form.password !==
+      form.confirmPassword
+    ) {
+      setError(
+        "Password and confirm password do not match."
+      );
+
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const normalizedEmail =
+        form.email.trim().toLowerCase();
+
+      const result =
+        await signupUser({
+          firstName:
+            form.firstName.trim(),
+          lastName:
+            form.lastName.trim(),
+          email: normalizedEmail,
+          zoomEmail:
+            form.zoomEmail
+              .trim()
+              .toLowerCase(),
+          mobileNumber:
+            form.mobileNumber.trim(),
+          nicNumber:
+            form.nicNumber
+              .trim()
+              .toUpperCase(),
+          school:
+            form.school.trim(),
+          city:
+            form.city.trim(),
+          address:
+            form.address.trim(),
+          password: form.password,
+          confirmPassword:
+            form.confirmPassword,
+        });
+
+      setPendingVerificationEmail(
+        normalizedEmail
+      );
+
+      navigate("/verify-email", {
+        replace: true,
+        state: {
+          email: normalizedEmail,
+          message: result.message,
+        },
+      });
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          "Account creation failed."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formDisabled =
+    isSubmitting ||
+    isSettingsLoading ||
+    registrationClosed;
+
+  return (
+    <AuthPageShell
+      eyebrow="Student registration"
+      title="Create your account"
+      description="Register using your student and contact information. An email verification code will be sent before you can sign in."
+      footer={
+        <p>
+          Already registered?{" "}
+          <Link
+            to="/login"
+            className="font-black text-brand-700 hover:text-brand-900"
+          >
+            Sign in
+          </Link>
+        </p>
+      }
+    >
+      <div className="space-y-5">
+        {error && (
+          <StatusMessage variant="error">
+            {error}
+          </StatusMessage>
+        )}
+
+        {registrationClosed && (
+          <StatusMessage variant="warning">
+            {registration.closedMessage ||
+              "Student registration is currently closed."}
+          </StatusMessage>
+        )}
+
+        {isSettingsLoading && (
+          <StatusMessage>
+            Checking registration
+            availability…
+          </StatusMessage>
+        )}
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="mt-7 space-y-8"
+      >
+        <section>
+          <h3 className="text-lg font-black text-slate-950">
+            Personal details
+          </h3>
+
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <FormField
+              id="firstName"
+              label="First name"
+              value={form.firstName}
+              onChange={handleChange}
+              autoComplete="given-name"
+              placeholder="First name"
+              required
+              disabled={formDisabled}
+              minLength={2}
+              maxLength={50}
+            />
+
+            <FormField
+              id="lastName"
+              label="Last name"
+              value={form.lastName}
+              onChange={handleChange}
+              autoComplete="family-name"
+              placeholder="Last name"
+              required
+              disabled={formDisabled}
+              minLength={2}
+              maxLength={50}
+            />
+
+            <FormField
+              id="nicNumber"
+              label="NIC number"
+              value={form.nicNumber}
+              onChange={handleChange}
+              placeholder="NIC number"
+              required
+              disabled={formDisabled}
+              maxLength={20}
+            />
+
+            <FormField
+              id="mobileNumber"
+              label="Mobile number"
+              type="tel"
+              value={form.mobileNumber}
+              onChange={handleChange}
+              autoComplete="tel"
+              inputMode="tel"
+              placeholder="Mobile number"
+              required
+              disabled={formDisabled}
+              maxLength={20}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-black text-slate-950">
+            Contact and education
+          </h3>
+
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <FormField
+              id="email"
+              label="Account email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              autoComplete="email"
+              placeholder="you@example.com"
+              required
+              disabled={formDisabled}
+              maxLength={254}
+              helpText="Verification and account emails will be sent here."
+            />
+
+            <FormField
+              id="zoomEmail"
+              label="Zoom email"
+              type="email"
+              value={form.zoomEmail}
+              onChange={handleChange}
+              autoComplete="email"
+              placeholder="zoom@example.com"
+              required
+              disabled={formDisabled}
+              maxLength={254}
+              helpText="Use the email connected to your Zoom account."
+            />
+
+            <FormField
+              id="school"
+              label="School"
+              value={form.school}
+              onChange={handleChange}
+              autoComplete="organization"
+              placeholder="School name"
+              required
+              disabled={formDisabled}
+              maxLength={150}
+            />
+
+            <FormField
+              id="city"
+              label="City"
+              value={form.city}
+              onChange={handleChange}
+              autoComplete="address-level2"
+              placeholder="City"
+              required
+              disabled={formDisabled}
+              maxLength={100}
+            />
+
+            <div className="sm:col-span-2">
+              <FormField
+                id="address"
+                label="Address"
+                value={form.address}
+                onChange={handleChange}
+                autoComplete="street-address"
+                placeholder="Residential address"
+                required
+                disabled={formDisabled}
+                maxLength={300}
+                multiline
+                rows={3}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-black text-slate-950">
+            Password
+          </h3>
+
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <PasswordField
+              id="password"
+              label="Password"
+              value={form.password}
+              onChange={handleChange}
+              autoComplete="new-password"
+              placeholder="Minimum 8 characters"
+              disabled={formDisabled}
+              helpText="Use at least 8 characters."
+            />
+
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm password"
+              value={
+                form.confirmPassword
+              }
+              onChange={handleChange}
+              autoComplete="new-password"
+              placeholder="Repeat password"
+              disabled={formDisabled}
+            />
+          </div>
+        </section>
+
+        <button
+          type="submit"
+          disabled={formDisabled}
+          className="w-full rounded-2xl bg-brand-600 px-6 py-4 text-sm font-black text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSubmitting
+            ? "Creating account…"
+            : "Create student account"}
+        </button>
+      </form>
+    </AuthPageShell>
+  );
+}
+
+
+============================================================
+FILE: src\pages\student\StudentCoursePage.jsx
+============================================================
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Link,
+  useParams,
+} from "react-router";
+
+import {
+  getCurrentCourseBillingPeriod,
+  getPublishedCourse,
+} from "../../api/courseApi.js";
+
+import {
+  getMyCourseAccess,
+  submitCoursePaymentSlip,
+} from "../../api/enrollmentApi.js";
+
+import {
+  getMyPayments,
+} from "../../api/paymentApi.js";
+
+import {
+  getStudentPlatformSettings,
+} from "../../api/settingsApi.js";
+
+import EmptyState from "../../components/common/EmptyState.jsx";
+import StatusBadge from "../../components/common/StatusBadge.jsx";
+import StatusMessage from "../../components/common/StatusMessage.jsx";
+
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatFileSize,
+} from "../../utils/formatters.js";
+
+const isSameId = (
+  first,
+  second
+) => {
+  const firstId =
+    first?._id ||
+    first;
+
+  const secondId =
+    second?._id ||
+    second;
+
+  return (
+    Boolean(
+      firstId &&
+        secondId
+    ) &&
+    String(firstId) ===
+      String(secondId)
+  );
+};
+
+const getPaymentReason = (
+  payment
+) => {
+  return (
+    payment?.reviewNote ||
+    payment?.rejectionReason ||
+    payment?.reason ||
+    ""
+  );
+};
+
+export default function StudentCoursePage() {
+  const {
+    identifier,
+  } = useParams();
+
+  const [course, setCourse] =
+    useState(null);
+
+  const [access, setAccess] =
+    useState(null);
+
+  const [
+    billingPeriod,
+    setBillingPeriod,
+  ] = useState(null);
+
+  const [
+    paymentDetails,
+    setPaymentDetails,
+  ] = useState(null);
+
+  const [payments, setPayments] =
+    useState([]);
+
+  const [
+    selectedFile,
+    setSelectedFile,
+  ] = useState(null);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [
+    isUploading,
+    setIsUploading,
+  ] = useState(false);
+
+  const fileInputRef =
+    useRef(null);
+
+  const loadCourse =
+    useCallback(
+      async ({
+        showLoading = true,
+      } = {}) => {
+        setError("");
+
+        if (showLoading) {
+          setIsLoading(true);
+        }
+
+        try {
+          const courseResult =
+            await getPublishedCourse(
+              identifier
+            );
+
+          const loadedCourse =
+            courseResult.course;
+
+          const requests = [
+            getMyCourseAccess(
+              loadedCourse._id
+            ),
+
+            getMyPayments({
+              courseId:
+                loadedCourse._id,
+            }),
+
+            getStudentPlatformSettings(),
+          ];
+
+          if (
+            loadedCourse.paymentPlan ===
+            "monthly"
+          ) {
+            requests.push(
+              getCurrentCourseBillingPeriod(
+                loadedCourse._id
+              )
+            );
+          }
+
+          const results =
+            await Promise.all(
+              requests
+            );
+
+          const [
+            accessResult,
+            paymentResult,
+            settingsResult,
+            billingResult,
+          ] = results;
+
+          setCourse(
+            loadedCourse
+          );
+
+          setAccess(
+            accessResult
+          );
+
+          setPayments(
+            paymentResult
+              .paymentSubmissions || []
+          );
+
+          setPaymentDetails(
+            settingsResult.settings
+              ?.paymentDetails || null
+          );
+
+          setBillingPeriod(
+            billingResult
+              ?.billingPeriod || null
+          );
+        } catch (requestError) {
+          setError(
+            requestError.message ||
+              "The course could not be loaded."
+          );
+        } finally {
+          if (showLoading) {
+            setIsLoading(false);
+          }
+        }
+      },
+      [identifier]
+    );
+
+  useEffect(() => {
+    loadCourse();
+  }, [loadCourse]);
+
+  const relevantPayments =
+    useMemo(() => {
+      if (!course) {
+        return [];
+      }
+
+      if (
+        course.paymentPlan ===
+        "monthly"
+      ) {
+        if (!billingPeriod) {
+          return [];
+        }
+
+        return payments.filter(
+          (payment) =>
+            isSameId(
+              payment.billingPeriod,
+              billingPeriod
+            )
+        );
+      }
+
+      return payments.filter(
+        (payment) =>
+          !payment.billingPeriod
+      );
+    }, [
+      course,
+      payments,
+      billingPeriod,
+    ]);
+
+  const pendingPayment =
+    relevantPayments.find(
+      (payment) =>
+        payment.status ===
+        "pending"
+    );
+
+  const latestRelevantPayment =
+    relevantPayments[0] ||
+    null;
+
+  const paymentDeadlinePassed =
+    Boolean(
+      billingPeriod
+        ?.paymentDeadline &&
+        new Date() >
+          new Date(
+            billingPeriod.paymentDeadline
+          )
+    );
+
+  const monthlyPaymentOpen =
+    course?.paymentPlan !==
+      "monthly" ||
+    Boolean(
+      billingPeriod &&
+        billingPeriod.isPublished &&
+        billingPeriod.isPaymentOpen &&
+        !billingPeriod.isArchived &&
+        !paymentDeadlinePassed
+    );
+
+  const enrollmentBlocked =
+    [
+      "suspended",
+      "cancelled",
+    ].includes(
+      access?.enrollmentStatus
+    );
+
+  const canUpload =
+    Boolean(
+      course &&
+        course.isEnrollmentOpen &&
+        !access?.hasAccess &&
+        !pendingPayment &&
+        !enrollmentBlocked &&
+        monthlyPaymentOpen
+    );
+
+  const handleFileChange = (
+    event
+  ) => {
+    setError("");
+    setSuccess("");
+
+    const file =
+      event.target.files?.[0] ||
+      null;
+
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    const allowedTypes =
+      new Set([
+        "image/jpeg",
+        "image/png",
+        "application/pdf",
+      ]);
+
+    if (
+      !allowedTypes.has(
+        file.type
+      )
+    ) {
+      event.target.value = "";
+
+      setSelectedFile(null);
+
+      setError(
+        "Payment slips must be JPG, PNG or PDF files."
+      );
+
+      return;
+    }
+
+    setSelectedFile(file);
+  };
+
+  const handleUpload = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    if (!selectedFile) {
+      setError(
+        "Select a payment slip first."
+      );
+
+      return;
+    }
+
+    if (!course?._id) {
+      setError(
+        "Course information is unavailable."
+      );
+
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setIsUploading(true);
+
+    try {
+      const result =
+        await submitCoursePaymentSlip({
+          courseId: course._id,
+          file: selectedFile,
+        });
+
+      setSelectedFile(null);
+
+      if (
+        fileInputRef.current
+      ) {
+        fileInputRef.current.value =
+          "";
+      }
+
+      setSuccess(
+        result.message ||
+          "Payment slip uploaded successfully."
+      );
+
+      await loadCourse({
+        showLoading: false,
+      });
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          "The payment slip could not be uploaded."
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="h-10 w-80 animate-pulse rounded-xl bg-slate-200" />
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="h-[38rem] animate-pulse rounded-3xl bg-slate-200" />
+          <div className="h-[38rem] animate-pulse rounded-3xl bg-slate-200" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+        <StatusMessage variant="error">
+          {error ||
+            "The course could not be found."}
+        </StatusMessage>
+
+        <Link
+          to="/student/courses"
+          className="mt-6 inline-flex rounded-2xl bg-brand-600 px-6 py-3 text-sm font-black text-white"
+        >
+          Return to courses
+        </Link>
+      </div>
+    );
+  }
+
+  const requiredAmount =
+    course.paymentPlan ===
+    "monthly"
+      ? billingPeriod?.amount
+      : course.price;
+
+  const requiredCurrency =
+    course.paymentPlan ===
+    "monthly"
+      ? billingPeriod?.currency
+      : course.currency;
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <Link
+        to="/student/courses"
+        className="text-sm font-black text-brand-700 transition hover:text-brand-900"
+      >
+        ← Back to courses
+      </Link>
+
+      <div className="mt-6 flex flex-wrap items-start justify-between gap-6">
+        <div className="max-w-3xl">
+          <p className="text-sm font-black uppercase tracking-[0.17em] text-brand-700">
+            {course.code}
+          </p>
+
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">
+            {course.title}
+          </h1>
+
+          <p className="mt-4 text-lg leading-8 text-slate-600">
+            {course.shortDescription ||
+              course.description ||
+              "Course information"}
+          </p>
+        </div>
+
+        <StatusBadge
+          status={
+            access?.hasAccess
+              ? "active"
+              : access
+                  ?.enrollmentStatus ||
+                "not_enrolled"
+          }
+          label={
+            access?.hasAccess
+              ? "Access active"
+              : undefined
+          }
+        />
+      </div>
+
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link
+          to={`/student/lessons/${encodeURIComponent(
+            course._id
+          )}`}
+          className="rounded-2xl bg-brand-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
+        >
+          Open lessons
+        </Link>
+
+        <Link
+          to={`/student/live-classes?courseId=${encodeURIComponent(
+            course._id
+          )}`}
+          className="rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-black text-slate-800 transition hover:bg-slate-100"
+        >
+          View live classes
+        </Link>
+      </div>
+
+      <div className="mt-8 space-y-4">
+        {error && (
+          <StatusMessage variant="error">
+            {error}
+          </StatusMessage>
+        )}
+
+        {success && (
+          <StatusMessage variant="success">
+            {success}
+          </StatusMessage>
+        )}
+
+        <StatusMessage
+          variant={
+            access?.hasAccess
+              ? "success"
+              : "info"
+          }
+        >
+          {access?.reason ||
+            "Course access information is unavailable."}
+        </StatusMessage>
+
+        {latestRelevantPayment
+          ?.status ===
+          "rejected" && (
+          <StatusMessage variant="error">
+            <strong>
+              Payment not approved:
+            </strong>{" "}
+            {getPaymentReason(
+              latestRelevantPayment
+            ) ||
+              "Review the payment details and upload a clearer slip."}
+          </StatusMessage>
+        )}
+      </div>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="space-y-6">
+          <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            {course.thumbnailUrl ? (
+              <img
+                src={
+                  course.thumbnailUrl
+                }
+                alt=""
+                className="max-h-96 w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-64 items-center justify-center bg-gradient-to-br from-brand-100 via-brand-50 to-slate-100">
+                <span className="text-6xl font-black text-brand-700">
+                  {String(
+                    course.code ||
+                      "EL"
+                  )
+                    .slice(0, 3)
+                    .toUpperCase()}
+                </span>
+              </div>
+            )}
+
+            <div className="p-6 sm:p-8">
+              <dl className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    Subject
+                  </dt>
+
+                  <dd className="mt-2 font-bold text-slate-950">
+                    {course.subject ||
+                      "Economics"}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    Academic level
+                  </dt>
+
+                  <dd className="mt-2 font-bold text-slate-950">
+                    {course.academicLevel ||
+                      "—"}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    Category
+                  </dt>
+
+                  <dd className="mt-2 capitalize font-bold text-slate-950">
+                    {course.category ||
+                      "—"}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    Payment plan
+                  </dt>
+
+                  <dd className="mt-2 font-bold text-slate-950">
+                    {course.paymentPlan ===
+                    "monthly"
+                      ? "Monthly"
+                      : "One-time"}
+                  </dd>
+                </div>
+              </dl>
+
+              {course.description && (
+                <div className="mt-8 border-t border-slate-100 pt-7">
+                  <h2 className="text-xl font-black text-slate-950">
+                    About this course
+                  </h2>
+
+                  <p className="mt-3 whitespace-pre-line leading-7 text-slate-600">
+                    {course.description}
+                  </p>
+                </div>
+              )}
+
+              {course.weeklySchedule
+                ?.length > 0 && (
+                <div className="mt-8 border-t border-slate-100 pt-7">
+                  <h2 className="text-xl font-black text-slate-950">
+                    Weekly schedule
+                  </h2>
+
+                  <div className="mt-4 space-y-3">
+                    {course.weeklySchedule.map(
+                      (
+                        item,
+                        index
+                      ) => (
+                        <div
+                          key={
+                            item._id ||
+                            `${item.day}-${index}`
+                          }
+                          className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"
+                        >
+                          {item.day ||
+                            item.label ||
+                            "Class"}{" "}
+                          {item.startTime &&
+                            `· ${item.startTime}`}
+                          {item.endTime &&
+                            ` – ${item.endTime}`}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h2 className="text-xl font-black text-slate-950">
+                Payment history
+              </h2>
+
+              <Link
+                to="/student/payments"
+                className="text-sm font-black text-brand-700 hover:text-brand-900"
+              >
+                View all payments
+              </Link>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {payments.length === 0 ? (
+                <EmptyState
+                  title="No payment submissions"
+                  description="No payment slip has been submitted for this course."
+                />
+              ) : (
+                payments.map(
+                  (payment) => (
+                    <article
+                      key={payment._id}
+                      className="rounded-2xl border border-slate-200 p-5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <p className="font-black text-slate-950">
+                            {payment
+                              .billingPeriod
+                              ?.label ||
+                              "One-time course payment"}
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            Attempt{" "}
+                            {payment.attemptNumber ||
+                              1}{" "}
+                            ·{" "}
+                            {formatDateTime(
+                              payment.createdAt
+                            )}
+                          </p>
+                        </div>
+
+                        <StatusBadge
+                          status={
+                            payment.status
+                          }
+                        />
+                      </div>
+
+                      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                        <p className="text-slate-600">
+                          Amount:{" "}
+                          <strong className="text-slate-950">
+                            {formatCurrency(
+                              payment.expectedAmount ??
+                                payment.amount,
+                              payment.currency ||
+                                payment.expectedCurrency
+                            )}
+                          </strong>
+                        </p>
+
+                        <p className="text-slate-600">
+                          File:{" "}
+                          <strong className="break-all text-slate-950">
+                            {payment.originalFileName ||
+                              "Payment slip"}
+                          </strong>
+                        </p>
+                      </div>
+
+                      {payment.status ===
+                        "rejected" && (
+                        <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+                          {getPaymentReason(
+                            payment
+                          ) ||
+                            "The payment could not be approved."}
+                        </p>
+                      )}
+                    </article>
+                  )
+                )
+              )}
+            </div>
+          </section>
+        </div>
+
+        <aside className="space-y-6">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="text-xl font-black text-slate-950">
+              Payment requirement
+            </h2>
+
+            {course.paymentPlan ===
+              "monthly" && (
+              <div className="mt-5 rounded-2xl bg-brand-50 p-5">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-brand-700">
+                  Current period
+                </p>
+
+                <p className="mt-2 text-xl font-black text-slate-950">
+                  {billingPeriod
+                    ?.label || "—"}
+                </p>
+
+                <p className="mt-2 text-sm text-slate-600">
+                  Deadline:{" "}
+                  <strong>
+                    {formatDate(
+                      billingPeriod
+                        ?.paymentDeadline
+                    )}
+                  </strong>
+                </p>
+              </div>
+            )}
+
+            <p className="mt-6 text-sm font-bold uppercase tracking-wide text-slate-500">
+              Amount due
+            </p>
+
+            <p className="mt-2 text-3xl font-black text-slate-950">
+              {formatCurrency(
+                requiredAmount,
+                requiredCurrency
+              )}
+            </p>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <StatusBadge
+                status={
+                  course
+                    .isEnrollmentOpen
+                    ? "open"
+                    : "closed"
+                }
+                label={
+                  course
+                    .isEnrollmentOpen
+                    ? "Enrolment open"
+                    : "Enrolment closed"
+                }
+              />
+
+              {course.paymentPlan ===
+                "monthly" && (
+                <StatusBadge
+                  status={
+                    monthlyPaymentOpen
+                      ? "open"
+                      : "closed"
+                  }
+                  label={
+                    monthlyPaymentOpen
+                      ? "Payment open"
+                      : "Payment closed"
+                  }
+                />
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="text-xl font-black text-slate-950">
+              Bank-transfer details
+            </h2>
+
+            <dl className="mt-5 space-y-4">
+              <div>
+                <dt className="text-xs font-black uppercase tracking-[0.13em] text-slate-500">
+                  Bank
+                </dt>
+
+                <dd className="mt-1 font-bold text-slate-950">
+                  {paymentDetails
+                    ?.bankName || "—"}
+                </dd>
+              </div>
+
+              <div>
+                <dt className="text-xs font-black uppercase tracking-[0.13em] text-slate-500">
+                  Account name
+                </dt>
+
+                <dd className="mt-1 font-bold text-slate-950">
+                  {paymentDetails
+                    ?.accountName ||
+                    "—"}
+                </dd>
+              </div>
+
+              <div>
+                <dt className="text-xs font-black uppercase tracking-[0.13em] text-slate-500">
+                  Account number
+                </dt>
+
+                <dd className="mt-1 break-all font-bold text-slate-950">
+                  {paymentDetails
+                    ?.accountNumber ||
+                    "—"}
+                </dd>
+              </div>
+
+              <div>
+                <dt className="text-xs font-black uppercase tracking-[0.13em] text-slate-500">
+                  Branch
+                </dt>
+
+                <dd className="mt-1 font-bold text-slate-950">
+                  {paymentDetails
+                    ?.branchName || "—"}
+                </dd>
+              </div>
+            </dl>
+
+            {paymentDetails
+              ?.instructions && (
+              <p className="mt-5 whitespace-pre-line rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                {
+                  paymentDetails.instructions
+                }
+              </p>
+            )}
+
+            {paymentDetails
+              ?.paymentReferenceNote && (
+              <p className="mt-4 text-sm font-semibold leading-6 text-brand-800">
+                {
+                  paymentDetails.paymentReferenceNote
+                }
+              </p>
+            )}
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="text-xl font-black text-slate-950">
+              Upload payment slip
+            </h2>
+
+            {access?.hasAccess ? (
+              <StatusMessage variant="success">
+                Payment approval is
+                complete for the current
+                access requirement.
+              </StatusMessage>
+            ) : pendingPayment ? (
+              <div className="mt-5">
+                <StatusMessage variant="warning">
+                  A payment slip is already
+                  pending administrator
+                  review.
+                </StatusMessage>
+              </div>
+            ) : enrollmentBlocked ? (
+              <div className="mt-5">
+                <StatusMessage variant="error">
+                  This enrolment cannot
+                  currently accept payments.
+                </StatusMessage>
+              </div>
+            ) : !course
+                .isEnrollmentOpen ? (
+              <div className="mt-5">
+                <StatusMessage variant="warning">
+                  Course enrolment is
+                  currently closed.
+                </StatusMessage>
+              </div>
+            ) : !monthlyPaymentOpen ? (
+              <div className="mt-5">
+                <StatusMessage variant="warning">
+                  Payments are currently
+                  closed for this billing
+                  period.
+                </StatusMessage>
+              </div>
+            ) : null}
+
+            <form
+              onSubmit={handleUpload}
+              className="mt-5"
+            >
+              <label
+                htmlFor="paymentSlip"
+                className="block text-sm font-bold text-slate-800"
+              >
+                Payment slip
+              </label>
+
+              <input
+                ref={fileInputRef}
+                id="paymentSlip"
+                name="paymentSlip"
+                type="file"
+                accept="image/jpeg,image/png,application/pdf"
+                onChange={
+                  handleFileChange
+                }
+                disabled={
+                  isUploading ||
+                  !canUpload
+                }
+                className="mt-3 block w-full rounded-2xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-brand-100 file:px-4 file:py-2 file:text-sm file:font-black file:text-brand-800 hover:file:bg-brand-200 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+
+              {selectedFile && (
+                <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                  <p className="break-all text-sm font-bold text-slate-950">
+                    {selectedFile.name}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    {formatFileSize(
+                      selectedFile.size
+                    )}
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  isUploading ||
+                  !canUpload ||
+                  !selectedFile
+                }
+                className="mt-5 w-full rounded-2xl bg-brand-600 px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isUploading
+                  ? "Uploading payment…"
+                  : "Submit payment slip"}
+              </button>
+            </form>
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+
+============================================================
+FILE: src\pages\admin\AdminCoursePage.jsx
+============================================================
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Link,
+  useParams,
+} from "react-router";
+
+import {
+  archiveAdminBillingPeriod,
+  createAdminBillingPeriod,
+  getAdminBillingPeriods,
+  restoreAdminBillingPeriod,
+  setAdminBillingPeriodStatus,
+  updateAdminBillingPeriod,
+} from "../../api/billingPeriodAdminApi.js";
+
+import {
+  getAdminCourse,
+  setAdminCourseEnrollment,
+  setAdminCoursePublication,
+  updateAdminCourse,
+} from "../../api/courseAdminApi.js";
+
+import {
+  archiveAdminLesson,
+  createAdminLesson,
+  getAdminLessons,
+  restoreAdminLesson,
+  setAdminLessonPublication,
+  updateAdminLesson,
+} from "../../api/lessonAdminApi.js";
+
+import AdminPageHeader from "../../components/common/AdminPageHeader.jsx";
+import EmptyState from "../../components/common/EmptyState.jsx";
+import StatusBadge from "../../components/common/StatusBadge.jsx";
+import StatusMessage from "../../components/common/StatusMessage.jsx";
+import FormField from "../../components/forms/FormField.jsx";
+
+import {
+  formatCurrency,
+  formatDateTime,
+} from "../../utils/formatters.js";
+
+const toDateTimeLocal = (
+  value
+) => {
+  if (!value) {
+    return "";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+  const offset =
+    date.getTimezoneOffset() *
+    60_000;
+
+  return new Date(
+    date.getTime() - offset
+  )
+    .toISOString()
+    .slice(0, 16);
+};
+
+const toIsoDate = (
+  value
+) => {
+  if (!value) {
+    return null;
+  }
+
+  const date =
+    new Date(value);
+
+  return Number.isNaN(
+    date.getTime()
+  )
+    ? null
+    : date.toISOString();
+};
+
+const createCourseForm = (
+  course = {}
+) => ({
+  title:
+    course.title || "",
+
+  code:
+    course.code || "",
+
+  subject:
+    course.subject || "Economics",
+
+  academicLevel:
+    course.academicLevel || "",
+
+  category:
+    course.category || "grade",
+
+  paymentPlan:
+    course.paymentPlan ||
+    "monthly",
+
+  price:
+    String(
+      course.price ?? ""
+    ),
+
+  currency:
+    course.currency || "LKR",
+
+  shortDescription:
+    course.shortDescription || "",
+
+  description:
+    course.description || "",
+
+  thumbnailUrl:
+    course.thumbnailUrl || "",
+
+  sortOrder:
+    String(
+      course.sortOrder ?? 0
+    ),
+});
+
+const createDefaultPeriodForm =
+  (course = {}) => {
+    const now =
+      new Date();
+
+    const year =
+      now.getFullYear();
+
+    const month =
+      now.getMonth() + 1;
+
+    const accessStart =
+      new Date(
+        year,
+        month - 1,
+        1,
+        0,
+        0,
+        0
+      );
+
+    const accessEnd =
+      new Date(
+        year,
+        month,
+        0,
+        23,
+        59,
+        59
+      );
+
+    const label =
+      accessStart.toLocaleDateString(
+        "en",
+        {
+          month: "long",
+          year: "numeric",
+        }
+      );
+
+    return {
+      year:
+        String(year),
+
+      month:
+        String(month),
+
+      label,
+
+      amount:
+        String(
+          course.price ?? ""
+        ),
+
+      currency:
+        course.currency || "LKR",
+
+      accessStartsAt:
+        toDateTimeLocal(
+          accessStart
+        ),
+
+      accessEndsAt:
+        toDateTimeLocal(
+          accessEnd
+        ),
+
+      paymentDeadline:
+        toDateTimeLocal(
+          accessEnd
+        ),
+
+      isPublished: false,
+      isPaymentOpen: true,
+    };
+  };
+
+const createPeriodEditForm = (
+  period
+) => ({
+  year:
+    String(period.year),
+
+  month:
+    String(period.month),
+
+  label:
+    period.label || "",
+
+  amount:
+    String(period.amount ?? ""),
+
+  currency:
+    period.currency || "LKR",
+
+  accessStartsAt:
+    toDateTimeLocal(
+      period.accessStartsAt
+    ),
+
+  accessEndsAt:
+    toDateTimeLocal(
+      period.accessEndsAt
+    ),
+
+  paymentDeadline:
+    toDateTimeLocal(
+      period.paymentDeadline
+    ),
+
+  isPublished:
+    Boolean(
+      period.isPublished
+    ),
+
+  isPaymentOpen:
+    Boolean(
+      period.isPaymentOpen
+    ),
+});
+
+const emptyLessonForm = {
+  title: "",
+  description: "",
+  youtubeVideo: "",
+  billingPeriodId: "",
+  lessonOrder: "0",
+  maxViews: "2",
+  publishAt: "",
+  isPublished: false,
+};
+
+const createLessonEditForm = (
+  lesson
+) => ({
+  title:
+    lesson.title || "",
+
+  description:
+    lesson.description || "",
+
+  youtubeVideo:
+    lesson.youtubeVideoId || "",
+
+  billingPeriodId:
+    lesson.billingPeriod?._id ||
+    lesson.billingPeriod ||
+    "",
+
+  lessonOrder:
+    String(
+      lesson.lessonOrder ?? 0
+    ),
+
+  maxViews:
+    String(
+      lesson.maxViews ?? 2
+    ),
+
+  publishAt:
+    toDateTimeLocal(
+      lesson.publishAt
+    ),
+
+  isPublished:
+    Boolean(
+      lesson.isPublished
+    ),
+});
+
+export default function AdminCoursePage() {
+  const {
+    courseId,
+  } = useParams();
+
+  const [course, setCourse] =
+    useState(null);
+
+  const [
+    courseForm,
+    setCourseForm,
+  ] = useState(
+    createCourseForm()
+  );
+
+  const [
+    billingPeriods,
+    setBillingPeriods,
+  ] = useState([]);
+
+  const [lessons, setLessons] =
+    useState([]);
+
+  const [
+    periodForm,
+    setPeriodForm,
+  ] = useState(
+    createDefaultPeriodForm()
+  );
+
+  const [
+    editingPeriodId,
+    setEditingPeriodId,
+  ] = useState("");
+
+  const [
+    lessonForm,
+    setLessonForm,
+  ] = useState(
+    emptyLessonForm
+  );
+
+  const [
+    editingLessonId,
+    setEditingLessonId,
+  ] = useState("");
+
+  const [busyId, setBusyId] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const loadCourse =
+    useCallback(async () => {
+      setError("");
+      setIsLoading(true);
+
+      try {
+        const courseResult =
+          await getAdminCourse(
+            courseId
+          );
+
+        const loadedCourse =
+          courseResult.course;
+
+        const [
+          lessonResult,
+          periodResult,
+        ] = await Promise.all([
+          getAdminLessons(
+            courseId
+          ),
+
+          loadedCourse.paymentPlan ===
+          "monthly"
+            ? getAdminBillingPeriods(
+                courseId
+              )
+            : Promise.resolve({
+                billingPeriods: [],
+              }),
+        ]);
+
+        setCourse(
+          loadedCourse
+        );
+
+        setCourseForm(
+          createCourseForm(
+            loadedCourse
+          )
+        );
+
+        setLessons(
+          lessonResult.lessons ||
+            []
+        );
+
+        const loadedPeriods =
+          periodResult.billingPeriods ||
+          [];
+
+        setBillingPeriods(
+          loadedPeriods
+        );
+
+        setPeriodForm(
+          createDefaultPeriodForm(
+            loadedCourse
+          )
+        );
+
+        setLessonForm({
+          ...emptyLessonForm,
+
+          billingPeriodId:
+            loadedPeriods[0]?._id ||
+            "",
+        });
+      } catch (requestError) {
+        setError(
+          requestError.message ||
+            "Course management data could not be loaded."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }, [courseId]);
+
+  useEffect(() => {
+    loadCourse();
+  }, [loadCourse]);
+
+  const handleCourseChange = (
+    event
+  ) => {
+    const {
+      name,
+      value,
+    } = event.target;
+
+    setCourseForm(
+      (current) => ({
+        ...current,
+        [name]: value,
+      })
+    );
+  };
+
+  const handlePeriodChange = (
+    event
+  ) => {
+    const {
+      name,
+      value,
+      checked,
+      type,
+    } = event.target;
+
+    setPeriodForm(
+      (current) => ({
+        ...current,
+
+        [name]:
+          type === "checkbox"
+            ? checked
+            : value,
+      })
+    );
+  };
+
+  const handleLessonChange = (
+    event
+  ) => {
+    const {
+      name,
+      value,
+      checked,
+      type,
+    } = event.target;
+
+    setLessonForm(
+      (current) => ({
+        ...current,
+
+        [name]:
+          type === "checkbox"
+            ? checked
+            : value,
+      })
+    );
+  };
+
+  const showResult = (
+    result
+  ) => {
+    setSuccess(
+      result.message ||
+        "Changes saved."
+    );
+  };
+
+  const runAction = async (
+    key,
+    action
+  ) => {
+    setBusyId(key);
+    setError("");
+    setSuccess("");
+
+    try {
+      const result =
+        await action();
+
+      showResult(result);
+      await loadCourse();
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          "The operation failed."
+      );
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const saveCourse = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    await runAction(
+      "course-save",
+      () =>
+        updateAdminCourse(
+          courseId,
+          {
+            title:
+              courseForm.title.trim(),
+
+            code:
+              courseForm.code
+                .trim()
+                .toUpperCase(),
+
+            subject:
+              courseForm.subject.trim(),
+
+            academicLevel:
+              courseForm.academicLevel.trim(),
+
+            category:
+              courseForm.category,
+
+            paymentPlan:
+              courseForm.paymentPlan,
+
+            price:
+              Number(
+                courseForm.price
+              ),
+
+            currency:
+              courseForm.currency
+                .trim()
+                .toUpperCase(),
+
+            shortDescription:
+              courseForm.shortDescription.trim(),
+
+            description:
+              courseForm.description.trim(),
+
+            thumbnailUrl:
+              courseForm.thumbnailUrl.trim() ||
+              null,
+
+            sortOrder:
+              Number(
+                courseForm.sortOrder ||
+                  0
+              ),
+          }
+        )
+    );
+  };
+
+  const savePeriod = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    const fields = {
+      year:
+        Number(
+          periodForm.year
+        ),
+
+      month:
+        Number(
+          periodForm.month
+        ),
+
+      label:
+        periodForm.label.trim(),
+
+      amount:
+        Number(
+          periodForm.amount
+        ),
+
+      currency:
+        periodForm.currency
+          .trim()
+          .toUpperCase(),
+
+      accessStartsAt:
+        toIsoDate(
+          periodForm.accessStartsAt
+        ),
+
+      accessEndsAt:
+        toIsoDate(
+          periodForm.accessEndsAt
+        ),
+
+      paymentDeadline:
+        toIsoDate(
+          periodForm.paymentDeadline
+        ),
+    };
+
+    await runAction(
+      editingPeriodId ||
+        "period-create",
+      () =>
+        editingPeriodId
+          ? updateAdminBillingPeriod(
+              editingPeriodId,
+              fields
+            )
+          : createAdminBillingPeriod(
+              {
+                ...fields,
+                courseId,
+
+                isPublished:
+                  periodForm.isPublished,
+
+                isPaymentOpen:
+                  periodForm.isPaymentOpen,
+              }
+            )
+    );
+
+    setEditingPeriodId("");
+
+    setPeriodForm(
+      createDefaultPeriodForm(
+        course
+      )
+    );
+  };
+
+  const saveLesson = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    const fields = {
+      title:
+        lessonForm.title.trim(),
+
+      description:
+        lessonForm.description.trim(),
+
+      youtubeVideo:
+        lessonForm.youtubeVideo.trim(),
+
+      lessonOrder:
+        Number(
+          lessonForm.lessonOrder ||
+            0
+        ),
+
+      maxViews:
+        Number(
+          lessonForm.maxViews
+        ),
+
+      publishAt:
+        toIsoDate(
+          lessonForm.publishAt
+        ),
+    };
+
+    if (
+      course.paymentPlan ===
+      "monthly"
+    ) {
+      fields.billingPeriodId =
+        lessonForm.billingPeriodId;
+    }
+
+    await runAction(
+      editingLessonId ||
+        "lesson-create",
+      () =>
+        editingLessonId
+          ? updateAdminLesson(
+              editingLessonId,
+              fields
+            )
+          : createAdminLesson({
+              ...fields,
+              courseId,
+
+              isPublished:
+                lessonForm.isPublished,
+            })
+    );
+
+    setEditingLessonId("");
+
+    setLessonForm({
+      ...emptyLessonForm,
+
+      billingPeriodId:
+        billingPeriods[0]?._id ||
+        "",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="h-10 w-80 animate-pulse rounded-xl bg-slate-200" />
+
+        <div className="mt-8 h-[40rem] animate-pulse rounded-3xl bg-slate-200" />
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+        <StatusMessage variant="error">
+          {error ||
+            "Course not found."}
+        </StatusMessage>
+
+        <Link
+          to="/admin/courses"
+          className="mt-6 inline-flex rounded-2xl bg-brand-600 px-6 py-3 text-sm font-black text-white"
+        >
+          Return to courses
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <Link
+        to="/admin/courses"
+        className="text-sm font-black text-brand-700 hover:text-brand-900"
+      >
+        ← Return to courses
+      </Link>
+
+      <div className="mt-6">
+        <AdminPageHeader
+          eyebrow={course.code}
+          title={course.title}
+          description="Manage course details, monthly billing periods and published lessons."
+          action={
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge
+                status={
+                  course.isPublished
+                    ? "active"
+                    : "inactive"
+                }
+                label={
+                  course.isPublished
+                    ? "Published"
+                    : "Unpublished"
+                }
+              />
+
+              <StatusBadge
+                status={
+                  course.isEnrollmentOpen
+                    ? "open"
+                    : "closed"
+                }
+                label={
+                  course.isEnrollmentOpen
+                    ? "Enrolment open"
+                    : "Enrolment closed"
+                }
+              />
+            </div>
+          }
+        />
+      </div>
+
+      <div className="mt-7 space-y-4">
+        {error && (
+          <StatusMessage variant="error">
+            {error}
+          </StatusMessage>
+        )}
+
+        {success && (
+          <StatusMessage variant="success">
+            {success}
+          </StatusMessage>
+        )}
+      </div>
+
+      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-2xl font-black text-slate-950">
+            Course settings
+          </h2>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={
+                Boolean(busyId) ||
+                course.isArchived
+              }
+              onClick={() =>
+                runAction(
+                  "course-publication",
+                  () =>
+                    setAdminCoursePublication(
+                      courseId,
+                      !course.isPublished
+                    )
+                )
+              }
+              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700 disabled:opacity-40"
+            >
+              {course.isPublished
+                ? "Unpublish"
+                : "Publish"}
+            </button>
+
+            <button
+              type="button"
+              disabled={
+                Boolean(busyId) ||
+                course.isArchived
+              }
+              onClick={() =>
+                runAction(
+                  "course-enrolment",
+                  () =>
+                    setAdminCourseEnrollment(
+                      courseId,
+                      !course.isEnrollmentOpen
+                    )
+                )
+              }
+              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700 disabled:opacity-40"
+            >
+              {course.isEnrollmentOpen
+                ? "Close enrolment"
+                : "Open enrolment"}
+            </button>
+          </div>
+        </div>
+
+        <form
+          onSubmit={saveCourse}
+          className="mt-7"
+        >
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <FormField
+              id="title"
+              label="Title"
+              value={
+                courseForm.title
+              }
+              onChange={
+                handleCourseChange
+              }
+              required
+              disabled={
+                busyId ===
+                "course-save"
+              }
+            />
+
+            <FormField
+              id="code"
+              label="Course code"
+              value={
+                courseForm.code
+              }
+              onChange={
+                handleCourseChange
+              }
+              required
+              disabled={
+                busyId ===
+                "course-save"
+              }
+            />
+
+            <FormField
+              id="subject"
+              label="Subject"
+              value={
+                courseForm.subject
+              }
+              onChange={
+                handleCourseChange
+              }
+              required
+              disabled={
+                busyId ===
+                "course-save"
+              }
+            />
+
+            <FormField
+              id="academicLevel"
+              label="Academic level"
+              value={
+                courseForm.academicLevel
+              }
+              onChange={
+                handleCourseChange
+              }
+              required
+              disabled={
+                busyId ===
+                "course-save"
+              }
+            />
+
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-800">
+                Category
+              </label>
+
+              <select
+                name="category"
+                value={
+                  courseForm.category
+                }
+                onChange={
+                  handleCourseChange
+                }
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3.5"
+              >
+                <option value="grade">
+                  Grade
+                </option>
+
+                <option value="revision">
+                  Revision
+                </option>
+
+                <option value="other">
+                  Other
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-800">
+                Payment plan
+              </label>
+
+              <select
+                name="paymentPlan"
+                value={
+                  courseForm.paymentPlan
+                }
+                onChange={
+                  handleCourseChange
+                }
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3.5"
+              >
+                <option value="monthly">
+                  Monthly
+                </option>
+
+                <option value="one_time">
+                  One-time
+                </option>
+              </select>
+            </div>
+
+            <FormField
+              id="price"
+              label="Price"
+              type="number"
+              value={
+                courseForm.price
+              }
+              onChange={
+                handleCourseChange
+              }
+              required
+            />
+
+            <FormField
+              id="currency"
+              label="Currency"
+              value={
+                courseForm.currency
+              }
+              onChange={
+                handleCourseChange
+              }
+              required
+            />
+
+            <FormField
+              id="sortOrder"
+              label="Sort order"
+              type="number"
+              value={
+                courseForm.sortOrder
+              }
+              onChange={
+                handleCourseChange
+              }
+            />
+
+            <div className="sm:col-span-2 lg:col-span-3">
+              <FormField
+                id="shortDescription"
+                label="Short description"
+                value={
+                  courseForm.shortDescription
+                }
+                onChange={
+                  handleCourseChange
+                }
+                multiline
+                rows={2}
+              />
+            </div>
+
+            <div className="sm:col-span-2 lg:col-span-3">
+              <FormField
+                id="description"
+                label="Description"
+                value={
+                  courseForm.description
+                }
+                onChange={
+                  handleCourseChange
+                }
+                multiline
+                rows={5}
+              />
+            </div>
+
+            <div className="sm:col-span-2 lg:col-span-3">
+              <FormField
+                id="thumbnailUrl"
+                label="Thumbnail URL"
+                type="url"
+                value={
+                  courseForm.thumbnailUrl
+                }
+                onChange={
+                  handleCourseChange
+                }
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={
+              busyId ===
+              "course-save"
+            }
+            className="mt-7 rounded-2xl bg-brand-600 px-7 py-3.5 text-sm font-black text-white disabled:opacity-50"
+          >
+            {busyId ===
+            "course-save"
+              ? "Saving…"
+              : "Save course"}
+          </button>
+        </form>
+      </section>
+
+      {course.paymentPlan ===
+        "monthly" && (
+        <section className="mt-7 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <h2 className="text-2xl font-black text-slate-950">
+            Billing periods
+          </h2>
+
+          <form
+            onSubmit={savePeriod}
+            className="mt-7 rounded-2xl bg-slate-50 p-5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h3 className="font-black text-slate-950">
+                {editingPeriodId
+                  ? "Edit billing period"
+                  : "Create billing period"}
+              </h3>
+
+              {editingPeriodId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingPeriodId(
+                      ""
+                    );
+
+                    setPeriodForm(
+                      createDefaultPeriodForm(
+                        course
+                      )
+                    );
+                  }}
+                  className="text-sm font-black text-slate-600"
+                >
+                  Cancel editing
+                </button>
+              )}
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <FormField
+                id="year"
+                label="Year"
+                type="number"
+                value={
+                  periodForm.year
+                }
+                onChange={
+                  handlePeriodChange
+                }
+                required
+              />
+
+              <FormField
+                id="month"
+                label="Month"
+                type="number"
+                value={
+                  periodForm.month
+                }
+                onChange={
+                  handlePeriodChange
+                }
+                required
+              />
+
+              <FormField
+                id="label"
+                label="Label"
+                value={
+                  periodForm.label
+                }
+                onChange={
+                  handlePeriodChange
+                }
+              />
+
+              <FormField
+                id="amount"
+                label="Amount"
+                type="number"
+                value={
+                  periodForm.amount
+                }
+                onChange={
+                  handlePeriodChange
+                }
+                required
+              />
+
+              <FormField
+                id="currency"
+                label="Currency"
+                value={
+                  periodForm.currency
+                }
+                onChange={
+                  handlePeriodChange
+                }
+                required
+              />
+
+              <FormField
+                id="accessStartsAt"
+                label="Access starts"
+                type="datetime-local"
+                value={
+                  periodForm.accessStartsAt
+                }
+                onChange={
+                  handlePeriodChange
+                }
+                required
+              />
+
+              <FormField
+                id="accessEndsAt"
+                label="Access ends"
+                type="datetime-local"
+                value={
+                  periodForm.accessEndsAt
+                }
+                onChange={
+                  handlePeriodChange
+                }
+                required
+              />
+
+              <FormField
+                id="paymentDeadline"
+                label="Payment deadline"
+                type="datetime-local"
+                value={
+                  periodForm.paymentDeadline
+                }
+                onChange={
+                  handlePeriodChange
+                }
+              />
+            </div>
+
+            {!editingPeriodId && (
+              <div className="mt-5 flex flex-wrap gap-6">
+                <label className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                  <input
+                    name="isPublished"
+                    type="checkbox"
+                    checked={
+                      periodForm.isPublished
+                    }
+                    onChange={
+                      handlePeriodChange
+                    }
+                    className="h-5 w-5"
+                  />
+
+                  Published
+                </label>
+
+                <label className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                  <input
+                    name="isPaymentOpen"
+                    type="checkbox"
+                    checked={
+                      periodForm.isPaymentOpen
+                    }
+                    onChange={
+                      handlePeriodChange
+                    }
+                    className="h-5 w-5"
+                  />
+
+                  Payment open
+                </label>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={
+                Boolean(busyId)
+              }
+              className="mt-6 rounded-xl bg-brand-600 px-5 py-3 text-sm font-black text-white disabled:opacity-50"
+            >
+              {editingPeriodId
+                ? "Save period"
+                : "Create period"}
+            </button>
+          </form>
+
+          {billingPeriods.length ===
+          0 ? (
+            <div className="mt-6">
+              <EmptyState
+                title="No billing periods"
+                description="No monthly billing periods were found."
+              />
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {billingPeriods.map(
+                (period) => (
+                  <article
+                    key={period._id}
+                    className="rounded-2xl border border-slate-200 p-5"
+                  >
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        <div className="flex flex-wrap gap-2">
+                          <StatusBadge
+                            status={
+                              period.isArchived
+                                ? "closed"
+                                : period.isPublished
+                                  ? "active"
+                                  : "inactive"
+                            }
+                            label={
+                              period.isArchived
+                                ? "Archived"
+                                : period.isPublished
+                                  ? "Published"
+                                  : "Unpublished"
+                            }
+                          />
+
+                          <StatusBadge
+                            status={
+                              period.isPaymentOpen
+                                ? "open"
+                                : "closed"
+                            }
+                            label={
+                              period.isPaymentOpen
+                                ? "Payment open"
+                                : "Payment closed"
+                            }
+                          />
+                        </div>
+
+                        <h3 className="mt-3 text-lg font-black text-slate-950">
+                          {period.label}
+                        </h3>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          {formatCurrency(
+                            period.amount,
+                            period.currency
+                          )}{" "}
+                          · Deadline{" "}
+                          {formatDateTime(
+                            period.paymentDeadline
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingPeriodId(
+                              period._id
+                            );
+
+                            setPeriodForm(
+                              createPeriodEditForm(
+                                period
+                              )
+                            );
+                          }}
+                          className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700"
+                        >
+                          Edit
+                        </button>
+
+                        {!period.isArchived && (
+                          <>
+                            <button
+                              type="button"
+                              disabled={
+                                Boolean(
+                                  busyId
+                                )
+                              }
+                              onClick={() =>
+                                runAction(
+                                  `period-publish-${period._id}`,
+                                  () =>
+                                    setAdminBillingPeriodStatus(
+                                      period._id,
+                                      {
+                                        isPublished:
+                                          !period.isPublished,
+                                      }
+                                    )
+                                )
+                              }
+                              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700"
+                            >
+                              {period.isPublished
+                                ? "Unpublish"
+                                : "Publish"}
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                Boolean(
+                                  busyId
+                                )
+                              }
+                              onClick={() =>
+                                runAction(
+                                  `period-open-${period._id}`,
+                                  () =>
+                                    setAdminBillingPeriodStatus(
+                                      period._id,
+                                      {
+                                        isPaymentOpen:
+                                          !period.isPaymentOpen,
+                                      }
+                                    )
+                                )
+                              }
+                              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700"
+                            >
+                              {period.isPaymentOpen
+                                ? "Close payments"
+                                : "Open payments"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Archive ${period.label}?`
+                                  )
+                                ) {
+                                  void runAction(
+                                    `period-archive-${period._id}`,
+                                    () =>
+                                      archiveAdminBillingPeriod(
+                                        period._id
+                                      )
+                                  );
+                                }
+                              }}
+                              className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700"
+                            >
+                              Archive
+                            </button>
+                          </>
+                        )}
+
+                        {period.isArchived && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              runAction(
+                                `period-restore-${period._id}`,
+                                () =>
+                                  restoreAdminBillingPeriod(
+                                    period._id
+                                  )
+                              )
+                            }
+                            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700"
+                          >
+                            Restore
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                )
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      <section className="mt-7 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="text-2xl font-black text-slate-950">
+          Lessons
+        </h2>
+
+        <form
+          onSubmit={saveLesson}
+          className="mt-7 rounded-2xl bg-slate-50 p-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h3 className="font-black text-slate-950">
+              {editingLessonId
+                ? "Edit lesson"
+                : "Create lesson"}
+            </h3>
+
+            {editingLessonId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingLessonId(
+                    ""
+                  );
+
+                  setLessonForm({
+                    ...emptyLessonForm,
+
+                    billingPeriodId:
+                      billingPeriods[0]?._id ||
+                      "",
+                  });
+                }}
+                className="text-sm font-black text-slate-600"
+              >
+                Cancel editing
+              </button>
+            )}
+          </div>
+
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <FormField
+              id="title"
+              label="Lesson title"
+              value={
+                lessonForm.title
+              }
+              onChange={
+                handleLessonChange
+              }
+              required
+            />
+
+            <FormField
+              id="youtubeVideo"
+              label="YouTube URL or video ID"
+              value={
+                lessonForm.youtubeVideo
+              }
+              onChange={
+                handleLessonChange
+              }
+              required
+            />
+
+            {course.paymentPlan ===
+              "monthly" && (
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-800">
+                  Billing period
+                </label>
+
+                <select
+                  name="billingPeriodId"
+                  value={
+                    lessonForm.billingPeriodId
+                  }
+                  onChange={
+                    handleLessonChange
+                  }
+                  required
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-3.5"
+                >
+                  <option value="">
+                    Select period
+                  </option>
+
+                  {billingPeriods
+                    .filter(
+                      (period) =>
+                        !period.isArchived
+                    )
+                    .map(
+                      (period) => (
+                        <option
+                          key={
+                            period._id
+                          }
+                          value={
+                            period._id
+                          }
+                        >
+                          {period.label}
+                        </option>
+                      )
+                    )}
+                </select>
+              </div>
+            )}
+
+            <FormField
+              id="lessonOrder"
+              label="Lesson order"
+              type="number"
+              value={
+                lessonForm.lessonOrder
+              }
+              onChange={
+                handleLessonChange
+              }
+            />
+
+            <FormField
+              id="maxViews"
+              label="Maximum views"
+              type="number"
+              value={
+                lessonForm.maxViews
+              }
+              onChange={
+                handleLessonChange
+              }
+              required
+            />
+
+            <FormField
+              id="publishAt"
+              label="Publish at"
+              type="datetime-local"
+              value={
+                lessonForm.publishAt
+              }
+              onChange={
+                handleLessonChange
+              }
+            />
+
+            <div className="sm:col-span-2">
+              <FormField
+                id="description"
+                label="Description"
+                value={
+                  lessonForm.description
+                }
+                onChange={
+                  handleLessonChange
+                }
+                multiline
+                rows={4}
+              />
+            </div>
+          </div>
+
+          {!editingLessonId && (
+            <label className="mt-5 flex items-center gap-3 text-sm font-bold text-slate-700">
+              <input
+                name="isPublished"
+                type="checkbox"
+                checked={
+                  lessonForm.isPublished
+                }
+                onChange={
+                  handleLessonChange
+                }
+                className="h-5 w-5"
+              />
+
+              Publish immediately
+            </label>
+          )}
+
+          <button
+            type="submit"
+            disabled={
+              Boolean(busyId)
+            }
+            className="mt-6 rounded-xl bg-brand-600 px-5 py-3 text-sm font-black text-white disabled:opacity-50"
+          >
+            {editingLessonId
+              ? "Save lesson"
+              : "Create lesson"}
+          </button>
+        </form>
+
+        {lessons.length === 0 ? (
+          <div className="mt-6">
+            <EmptyState
+              title="No lessons"
+              description="No lessons have been created for this course."
+            />
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            {lessons.map(
+              (lesson) => (
+                <article
+                  key={lesson._id}
+                  className="rounded-2xl border border-slate-200 p-5"
+                >
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap gap-2">
+                        <StatusBadge
+                          status={
+                            lesson.isArchived
+                              ? "closed"
+                              : lesson.isPublished
+                                ? "active"
+                                : "inactive"
+                          }
+                          label={
+                            lesson.isArchived
+                              ? "Archived"
+                              : lesson.isPublished
+                                ? "Published"
+                                : "Unpublished"
+                          }
+                        />
+
+                        {lesson.billingPeriod && (
+                          <StatusBadge
+                            status="active"
+                            label={
+                              lesson
+                                .billingPeriod
+                                .label
+                            }
+                          />
+                        )}
+                      </div>
+
+                      <h3 className="mt-3 text-lg font-black text-slate-950">
+                        {lesson.lessonOrder}.{" "}
+                        {lesson.title}
+                      </h3>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        View limit:{" "}
+                        {lesson.maxViews} ·
+                        Publish time:{" "}
+                        {formatDateTime(
+                          lesson.publishAt
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingLessonId(
+                            lesson._id
+                          );
+
+                          setLessonForm(
+                            createLessonEditForm(
+                              lesson
+                            )
+                          );
+                        }}
+                        className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700"
+                      >
+                        Edit
+                      </button>
+
+                      {!lesson.isArchived && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              runAction(
+                                `lesson-publish-${lesson._id}`,
+                                () =>
+                                  setAdminLessonPublication(
+                                    lesson._id,
+                                    !lesson.isPublished
+                                  )
+                              )
+                            }
+                            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700"
+                          >
+                            {lesson.isPublished
+                              ? "Unpublish"
+                              : "Publish"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Archive ${lesson.title}?`
+                                )
+                              ) {
+                                void runAction(
+                                  `lesson-archive-${lesson._id}`,
+                                  () =>
+                                    archiveAdminLesson(
+                                      lesson._id
+                                    )
+                                );
+                              }
+                            }}
+                            className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700"
+                          >
+                            Archive
+                          </button>
+                        </>
+                      )}
+
+                      {lesson.isArchived && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            runAction(
+                              `lesson-restore-${lesson._id}`,
+                              () =>
+                                restoreAdminLesson(
+                                  lesson._id
+                                )
+                            )
+                          }
+                          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700"
+                        >
+                          Restore
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              )
+            )}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+============================================================
+FILE: src\pages\admin\AdminSettingsPage.jsx
+============================================================
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  getAdminPlatformSettings,
+  updateAdminPlatformSettings,
+} from "../../api/platformSettingsAdminApi.js";
+
+import AdminPageHeader from "../../components/common/AdminPageHeader.jsx";
+import StatusMessage from "../../components/common/StatusMessage.jsx";
+import FormField from "../../components/forms/FormField.jsx";
+
+import {
+  formatDateTime,
+} from "../../utils/formatters.js";
+
+const emptyForm = {
+  branding: {
+    platformName: "",
+    tagline: "",
+  },
+
+  contact: {
+    supportEmail: "",
+    supportPhone: "",
+    whatsappNumber: "",
+  },
+
+  registration: {
+    isOpen: true,
+    closedMessage: "",
+  },
+
+  maintenanceNotice: {
+    enabled: false,
+    message: "",
+  },
+
+  paymentDetails: {
+    bankName: "",
+    accountName: "",
+    accountNumber: "",
+    branchName: "",
+    instructions: "",
+    paymentReferenceNote: "",
+  },
+
+  learning: {
+    defaultLessonMaxViews: "2",
+  },
+
+  liveClasses: {
+    defaultJoinBeforeMinutes:
+      "30",
+
+    defaultJoinAfterMinutes:
+      "15",
+  },
+};
+
+const normalizeSettings = (
+  settings = {}
+) => {
+  return {
+    branding: {
+      platformName:
+        settings.branding
+          ?.platformName || "",
+
+      tagline:
+        settings.branding
+          ?.tagline || "",
+    },
+
+    contact: {
+      supportEmail:
+        settings.contact
+          ?.supportEmail || "",
+
+      supportPhone:
+        settings.contact
+          ?.supportPhone || "",
+
+      whatsappNumber:
+        settings.contact
+          ?.whatsappNumber || "",
+    },
+
+    registration: {
+      isOpen:
+        settings.registration
+          ?.isOpen !== false,
+
+      closedMessage:
+        settings.registration
+          ?.closedMessage || "",
+    },
+
+    maintenanceNotice: {
+      enabled:
+        Boolean(
+          settings
+            .maintenanceNotice
+            ?.enabled
+        ),
+
+      message:
+        settings
+          .maintenanceNotice
+          ?.message || "",
+    },
+
+    paymentDetails: {
+      bankName:
+        settings.paymentDetails
+          ?.bankName || "",
+
+      accountName:
+        settings.paymentDetails
+          ?.accountName || "",
+
+      accountNumber:
+        settings.paymentDetails
+          ?.accountNumber || "",
+
+      branchName:
+        settings.paymentDetails
+          ?.branchName || "",
+
+      instructions:
+        settings.paymentDetails
+          ?.instructions || "",
+
+      paymentReferenceNote:
+        settings.paymentDetails
+          ?.paymentReferenceNote ||
+        "",
+    },
+
+    learning: {
+      defaultLessonMaxViews:
+        String(
+          settings.learning
+            ?.defaultLessonMaxViews ??
+            2
+        ),
+    },
+
+    liveClasses: {
+      defaultJoinBeforeMinutes:
+        String(
+          settings.liveClasses
+            ?.defaultJoinBeforeMinutes ??
+            30
+        ),
+
+      defaultJoinAfterMinutes:
+        String(
+          settings.liveClasses
+            ?.defaultJoinAfterMinutes ??
+            15
+        ),
+    },
+  };
+};
+
+const SettingsSection = ({
+  title,
+  description,
+  children,
+}) => {
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <h2 className="text-xl font-black text-slate-950">
+        {title}
+      </h2>
+
+      {description && (
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+          {description}
+        </p>
+      )}
+
+      <div className="mt-6">
+        {children}
+      </div>
+    </section>
+  );
+};
+
+export default function AdminSettingsPage() {
+  const [form, setForm] =
+    useState(emptyForm);
+
+  const [
+    settingsMetadata,
+    setSettingsMetadata,
+  ] = useState(null);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+  const loadSettings =
+    useCallback(async () => {
+      setError("");
+      setIsLoading(true);
+
+      try {
+        const result =
+          await getAdminPlatformSettings();
+
+        setForm(
+          normalizeSettings(
+            result.settings
+          )
+        );
+
+        setSettingsMetadata(
+          result.settings
+        );
+      } catch (requestError) {
+        setError(
+          requestError.message ||
+            "Platform settings could not be loaded."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  const updateField = (
+    section,
+    field,
+    value
+  ) => {
+    setForm((current) => ({
+      ...current,
+
+      [section]: {
+        ...current[section],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleInputChange = (
+    section
+  ) => {
+    return (event) => {
+      const {
+        name,
+        value,
+        checked,
+        type,
+      } = event.target;
+
+      updateField(
+        section,
+        name,
+        type === "checkbox"
+          ? checked
+          : value
+      );
+    };
+  };
+
+  const handleSave = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    const defaultMaxViews =
+      Number(
+        form.learning
+          .defaultLessonMaxViews
+      );
+
+    const joinBefore =
+      Number(
+        form.liveClasses
+          .defaultJoinBeforeMinutes
+      );
+
+    const joinAfter =
+      Number(
+        form.liveClasses
+          .defaultJoinAfterMinutes
+      );
+
+    if (
+      !Number.isInteger(
+        defaultMaxViews
+      ) ||
+      defaultMaxViews < 1 ||
+      defaultMaxViews > 100
+    ) {
+      setError(
+        "Default lesson views must be a whole number between 1 and 100."
+      );
+
+      return;
+    }
+
+    if (
+      !Number.isInteger(
+        joinBefore
+      ) ||
+      joinBefore < 0 ||
+      joinBefore > 1440
+    ) {
+      setError(
+        "Default join-before time must be a whole number between 0 and 1440."
+      );
+
+      return;
+    }
+
+    if (
+      !Number.isInteger(
+        joinAfter
+      ) ||
+      joinAfter < 0 ||
+      joinAfter > 1440
+    ) {
+      setError(
+        "Default join-after time must be a whole number between 0 and 1440."
+      );
+
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setIsSaving(true);
+
+    try {
+      const result =
+        await updateAdminPlatformSettings(
+          {
+            branding: {
+              platformName:
+                form.branding
+                  .platformName
+                  .trim(),
+
+              tagline:
+                form.branding
+                  .tagline
+                  .trim(),
+            },
+
+            contact: {
+              supportEmail:
+                form.contact
+                  .supportEmail
+                  .trim(),
+
+              supportPhone:
+                form.contact
+                  .supportPhone
+                  .trim(),
+
+              whatsappNumber:
+                form.contact
+                  .whatsappNumber
+                  .trim(),
+            },
+
+            registration: {
+              isOpen:
+                form.registration
+                  .isOpen,
+
+              closedMessage:
+                form.registration
+                  .closedMessage
+                  .trim(),
+            },
+
+            maintenanceNotice: {
+              enabled:
+                form
+                  .maintenanceNotice
+                  .enabled,
+
+              message:
+                form
+                  .maintenanceNotice
+                  .message
+                  .trim(),
+            },
+
+            paymentDetails: {
+              bankName:
+                form.paymentDetails
+                  .bankName
+                  .trim(),
+
+              accountName:
+                form.paymentDetails
+                  .accountName
+                  .trim(),
+
+              accountNumber:
+                form.paymentDetails
+                  .accountNumber
+                  .trim(),
+
+              branchName:
+                form.paymentDetails
+                  .branchName
+                  .trim(),
+
+              instructions:
+                form.paymentDetails
+                  .instructions
+                  .trim(),
+
+              paymentReferenceNote:
+                form.paymentDetails
+                  .paymentReferenceNote
+                  .trim(),
+            },
+
+            learning: {
+              defaultLessonMaxViews:
+                defaultMaxViews,
+            },
+
+            liveClasses: {
+              defaultJoinBeforeMinutes:
+                joinBefore,
+
+              defaultJoinAfterMinutes:
+                joinAfter,
+            },
+          }
+        );
+
+      setForm(
+        normalizeSettings(
+          result.settings
+        )
+      );
+
+      setSettingsMetadata(
+        result.settings
+      );
+
+      setSuccess(
+        result.message ||
+          "Platform settings were updated."
+      );
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          "Platform settings could not be saved."
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="h-10 w-80 animate-pulse rounded-xl bg-slate-200" />
+
+        <div className="mt-8 h-[50rem] animate-pulse rounded-3xl bg-slate-200" />
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSave}
+      className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"
+    >
+      <AdminPageHeader
+        eyebrow="Platform administration"
+        title="Platform settings"
+        description="Manage public branding, registration, maintenance notices, student payment instructions and learning defaults."
+        action={
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="rounded-2xl bg-brand-600 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-brand-600/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSaving
+              ? "Saving settings…"
+              : "Save all settings"}
+          </button>
+        }
+      />
+
+      <div className="mt-7 space-y-4">
+        {error && (
+          <StatusMessage variant="error">
+            {error}
+          </StatusMessage>
+        )}
+
+        {success && (
+          <StatusMessage variant="success">
+            {success}
+          </StatusMessage>
+        )}
+      </div>
+
+      {settingsMetadata
+        ?.updatedAt && (
+        <p className="mt-5 text-sm text-slate-500">
+          Last updated{" "}
+          {formatDateTime(
+            settingsMetadata.updatedAt
+          )}
+          {settingsMetadata.updatedBy
+            ? ` by ${settingsMetadata.updatedBy.firstName || ""} ${settingsMetadata.updatedBy.lastName || ""}`
+            : ""}
+        </p>
+      )}
+
+      <div className="mt-8 space-y-7">
+        <SettingsSection
+          title="Branding"
+          description="These values are displayed on public and authenticated EconLLS pages."
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              id="platformName"
+              label="Platform name"
+              value={
+                form.branding
+                  .platformName
+              }
+              onChange={handleInputChange(
+                "branding"
+              )}
+              required
+              disabled={isSaving}
+            />
+
+            <FormField
+              id="tagline"
+              label="Tagline"
+              value={
+                form.branding
+                  .tagline
+              }
+              onChange={handleInputChange(
+                "branding"
+              )}
+              disabled={isSaving}
+            />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Support contacts"
+          description="Public support channels shown to students and visitors."
+        >
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <FormField
+              id="supportEmail"
+              label="Support email"
+              type="email"
+              value={
+                form.contact
+                  .supportEmail
+              }
+              onChange={handleInputChange(
+                "contact"
+              )}
+              disabled={isSaving}
+            />
+
+            <FormField
+              id="supportPhone"
+              label="Support phone"
+              value={
+                form.contact
+                  .supportPhone
+              }
+              onChange={handleInputChange(
+                "contact"
+              )}
+              disabled={isSaving}
+            />
+
+            <FormField
+              id="whatsappNumber"
+              label="WhatsApp number"
+              value={
+                form.contact
+                  .whatsappNumber
+              }
+              onChange={handleInputChange(
+                "contact"
+              )}
+              disabled={isSaving}
+            />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Student registration"
+          description="Closing registration prevents new student signups while leaving existing accounts available."
+        >
+          <label className="flex items-center gap-3 text-sm font-bold text-slate-700">
+            <input
+              name="isOpen"
+              type="checkbox"
+              checked={
+                form.registration
+                  .isOpen
+              }
+              onChange={handleInputChange(
+                "registration"
+              )}
+              disabled={isSaving}
+              className="h-5 w-5 rounded border-slate-300"
+            />
+
+            Student registration is
+            open
+          </label>
+
+          <div className="mt-5">
+            <FormField
+              id="closedMessage"
+              label="Registration closed message"
+              value={
+                form.registration
+                  .closedMessage
+              }
+              onChange={handleInputChange(
+                "registration"
+              )}
+              multiline
+              rows={3}
+              disabled={isSaving}
+            />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Maintenance notice"
+          description="Display a platform-wide informational notice without disabling access."
+        >
+          <label className="flex items-center gap-3 text-sm font-bold text-slate-700">
+            <input
+              name="enabled"
+              type="checkbox"
+              checked={
+                form
+                  .maintenanceNotice
+                  .enabled
+              }
+              onChange={handleInputChange(
+                "maintenanceNotice"
+              )}
+              disabled={isSaving}
+              className="h-5 w-5 rounded border-slate-300"
+            />
+
+            Show maintenance notice
+          </label>
+
+          <div className="mt-5">
+            <FormField
+              id="message"
+              label="Maintenance message"
+              value={
+                form
+                  .maintenanceNotice
+                  .message
+              }
+              onChange={handleInputChange(
+                "maintenanceNotice"
+              )}
+              multiline
+              rows={3}
+              disabled={isSaving}
+            />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Payment details"
+          description="These private bank details are available to authenticated students, not public visitors."
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              id="bankName"
+              label="Bank name"
+              value={
+                form.paymentDetails
+                  .bankName
+              }
+              onChange={handleInputChange(
+                "paymentDetails"
+              )}
+              disabled={isSaving}
+            />
+
+            <FormField
+              id="accountName"
+              label="Account name"
+              value={
+                form.paymentDetails
+                  .accountName
+              }
+              onChange={handleInputChange(
+                "paymentDetails"
+              )}
+              disabled={isSaving}
+            />
+
+            <FormField
+              id="accountNumber"
+              label="Account number"
+              value={
+                form.paymentDetails
+                  .accountNumber
+              }
+              onChange={handleInputChange(
+                "paymentDetails"
+              )}
+              disabled={isSaving}
+            />
+
+            <FormField
+              id="branchName"
+              label="Branch"
+              value={
+                form.paymentDetails
+                  .branchName
+              }
+              onChange={handleInputChange(
+                "paymentDetails"
+              )}
+              disabled={isSaving}
+            />
+
+            <div className="sm:col-span-2">
+              <FormField
+                id="instructions"
+                label="Payment instructions"
+                value={
+                  form.paymentDetails
+                    .instructions
+                }
+                onChange={handleInputChange(
+                  "paymentDetails"
+                )}
+                multiline
+                rows={5}
+                disabled={isSaving}
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <FormField
+                id="paymentReferenceNote"
+                label="Payment-reference note"
+                value={
+                  form.paymentDetails
+                    .paymentReferenceNote
+                }
+                onChange={handleInputChange(
+                  "paymentDetails"
+                )}
+                multiline
+                rows={3}
+                disabled={isSaving}
+              />
+            </div>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Learning defaults"
+          description="Default viewing limits apply when new lessons are created."
+        >
+          <div className="max-w-sm">
+            <FormField
+              id="defaultLessonMaxViews"
+              label="Default maximum lesson views"
+              type="number"
+              value={
+                form.learning
+                  .defaultLessonMaxViews
+              }
+              onChange={handleInputChange(
+                "learning"
+              )}
+              min="1"
+              max="100"
+              required
+              disabled={isSaving}
+            />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Live-class defaults"
+          description="Default Zoom joining-window values used when a live class does not provide custom values."
+        >
+          <div className="grid max-w-3xl gap-5 sm:grid-cols-2">
+            <FormField
+              id="defaultJoinBeforeMinutes"
+              label="Join opens before"
+              type="number"
+              value={
+                form.liveClasses
+                  .defaultJoinBeforeMinutes
+              }
+              onChange={handleInputChange(
+                "liveClasses"
+              )}
+              min="0"
+              max="1440"
+              required
+              disabled={isSaving}
+              helpText="Minutes before the scheduled start."
+            />
+
+            <FormField
+              id="defaultJoinAfterMinutes"
+              label="Join closes after"
+              type="number"
+              value={
+                form.liveClasses
+                  .defaultJoinAfterMinutes
+              }
+              onChange={handleInputChange(
+                "liveClasses"
+              )}
+              min="0"
+              max="1440"
+              required
+              disabled={isSaving}
+              helpText="Minutes after the scheduled meeting end."
+            />
+          </div>
+        </SettingsSection>
+      </div>
+
+      <div className="mt-8 flex justify-end">
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="rounded-2xl bg-brand-600 px-8 py-4 text-sm font-black text-white shadow-lg shadow-brand-600/20 disabled:opacity-50"
+        >
+          {isSaving
+            ? "Saving settings…"
+            : "Save all settings"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+============================================================
+FILE: src\pages\admin\AdminEnrollmentsPage.jsx
+============================================================
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Link,
+} from "react-router";
+
+import {
+  getAdminCourses,
+} from "../../api/courseAdminApi.js";
+
+import {
+  getAdminEnrollments,
+  updateAdminEnrollmentStatus,
+} from "../../api/enrollmentAdminApi.js";
+
+import AdminPageHeader from "../../components/common/AdminPageHeader.jsx";
+import EmptyState from "../../components/common/EmptyState.jsx";
+import Pagination from "../../components/common/Pagination.jsx";
+import StatusBadge from "../../components/common/StatusBadge.jsx";
+import StatusMessage from "../../components/common/StatusMessage.jsx";
+
+import {
+  formatDateTime,
+} from "../../utils/formatters.js";
+
+const statusOptions = [
+  "active",
+  "suspended",
+  "cancelled",
+];
+
+export default function AdminEnrollmentsPage() {
+  const [courses, setCourses] =
+    useState([]);
+
+  const [
+    enrollments,
+    setEnrollments,
+  ] = useState([]);
+
+  const [pagination, setPagination] =
+    useState({
+      currentPage: 1,
+      totalPages: 1,
+      totalEnrollments: 0,
+    });
+
+  const [filters, setFilters] =
+    useState({
+      courseId: "",
+      status: "",
+    });
+
+  const [
+    appliedFilters,
+    setAppliedFilters,
+  ] = useState(filters);
+
+  const [
+    statusDrafts,
+    setStatusDrafts,
+  ] = useState({});
+
+  const [
+    reasonDrafts,
+    setReasonDrafts,
+  ] = useState({});
+
+  const [busyId, setBusyId] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const loadCourses =
+    useCallback(async () => {
+      try {
+        const result =
+          await getAdminCourses({
+            page: 1,
+            limit: 100,
+            isArchived: "",
+          });
+
+        setCourses(
+          result.courses || []
+        );
+      } catch (requestError) {
+        setError(
+          requestError.message ||
+            "Course filters could not be loaded."
+        );
+      }
+    }, []);
+
+  const loadEnrollments =
+    useCallback(
+      async (page = 1) => {
+        setError("");
+        setIsLoading(true);
+
+        try {
+          const result =
+            await getAdminEnrollments({
+              ...appliedFilters,
+              page,
+              limit: 20,
+            });
+
+          const loaded =
+            result.enrollments ||
+            [];
+
+          setEnrollments(loaded);
+
+          setPagination(
+            result.pagination || {
+              currentPage: page,
+              totalPages: 1,
+              totalEnrollments: 0,
+            }
+          );
+
+          setStatusDrafts(
+            Object.fromEntries(
+              loaded.map(
+                (enrollment) => [
+                  enrollment._id,
+                  enrollment.status,
+                ]
+              )
+            )
+          );
+
+          setReasonDrafts(
+            Object.fromEntries(
+              loaded.map(
+                (enrollment) => [
+                  enrollment._id,
+                  enrollment.statusReason ||
+                    "",
+                ]
+              )
+            )
+          );
+        } catch (requestError) {
+          setError(
+            requestError.message ||
+              "Enrolments could not be loaded."
+          );
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      [appliedFilters]
+    );
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  useEffect(() => {
+    loadEnrollments(1);
+  }, [loadEnrollments]);
+
+  const saveStatus = async (
+    enrollment
+  ) => {
+    const status =
+      statusDrafts[
+        enrollment._id
+      ] || enrollment.status;
+
+    const reason =
+      (
+        reasonDrafts[
+          enrollment._id
+        ] || ""
+      ).trim();
+
+    if (
+      [
+        "suspended",
+        "cancelled",
+      ].includes(status) &&
+      !reason
+    ) {
+      setError(
+        "Enter a reason before suspending or cancelling an enrolment."
+      );
+
+      return;
+    }
+
+    setBusyId(enrollment._id);
+    setError("");
+    setSuccess("");
+
+    try {
+      const result =
+        await updateAdminEnrollmentStatus(
+          {
+            enrollmentId:
+              enrollment._id,
+
+            status,
+            reason:
+              status === "active"
+                ? ""
+                : reason,
+          }
+        );
+
+      setSuccess(
+        result.message ||
+          "Enrolment status updated."
+      );
+
+      await loadEnrollments(
+        pagination.currentPage
+      );
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          "Enrolment status could not be updated."
+      );
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <AdminPageHeader
+        eyebrow="Access administration"
+        title="Course enrolments"
+        description="Review payment-derived course access and suspend, cancel or reactivate enrolments."
+      />
+
+      <div className="mt-7 space-y-4">
+        {error && (
+          <StatusMessage variant="error">
+            {error}
+          </StatusMessage>
+        )}
+
+        {success && (
+          <StatusMessage variant="success">
+            {success}
+          </StatusMessage>
+        )}
+      </div>
+
+      <StatusMessage
+        variant="warning"
+        className="mt-6"
+      >
+        Activating an enrolment does
+        not create payment access. The
+        backend permits activation only
+        when a payment has already
+        granted at least one billing
+        period or one-time access.
+      </StatusMessage>
+
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+
+          setAppliedFilters({
+            ...filters,
+          });
+        }}
+        className="mt-8 grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_200px_auto]"
+      >
+        <select
+          value={filters.courseId}
+          onChange={(event) =>
+            setFilters(
+              (current) => ({
+                ...current,
+
+                courseId:
+                  event.target.value,
+              })
+            )
+          }
+          className="rounded-2xl border border-slate-300 bg-white px-4 py-3"
+        >
+          <option value="">
+            All courses
+          </option>
+
+          {courses.map(
+            (course) => (
+              <option
+                key={course._id}
+                value={course._id}
+              >
+                {course.code} —{" "}
+                {course.title}
+              </option>
+            )
+          )}
+        </select>
+
+        <select
+          value={filters.status}
+          onChange={(event) =>
+            setFilters(
+              (current) => ({
+                ...current,
+
+                status:
+                  event.target.value,
+              })
+            )
+          }
+          className="rounded-2xl border border-slate-300 bg-white px-4 py-3"
+        >
+          <option value="">
+            All statuses
+          </option>
+
+          <option value="pending">
+            Pending
+          </option>
+
+          <option value="active">
+            Active
+          </option>
+
+          <option value="suspended">
+            Suspended
+          </option>
+
+          <option value="cancelled">
+            Cancelled
+          </option>
+        </select>
+
+        <button
+          type="submit"
+          className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white"
+        >
+          Apply filters
+        </button>
+      </form>
+
+      <p className="mt-5 text-sm font-semibold text-slate-500">
+        {pagination.totalEnrollments ||
+          0}{" "}
+        total enrolments
+      </p>
+
+      {isLoading ? (
+        <div className="mt-6 space-y-4">
+          {Array.from({
+            length: 5,
+          }).map((_, index) => (
+            <div
+              key={index}
+              className="h-72 animate-pulse rounded-3xl bg-slate-200"
+            />
+          ))}
+        </div>
+      ) : enrollments.length === 0 ? (
+        <div className="mt-6">
+          <EmptyState
+            title="No enrolments"
+            description="No course enrolments match the selected filters."
+          />
+        </div>
+      ) : (
+        <div className="mt-6 space-y-5">
+          {enrollments.map(
+            (enrollment) => {
+              const student =
+                enrollment.student;
+
+              const course =
+                enrollment.course;
+
+              const approvedPeriods =
+                enrollment.approvedBillingPeriods ||
+                [];
+
+              const hasOneTimeAccess =
+                Boolean(
+                  enrollment
+                    .oneTimeAccessGrantedAt
+                );
+
+              const hasAccess =
+                hasOneTimeAccess ||
+                approvedPeriods.length >
+                  0;
+
+              const draftStatus =
+                statusDrafts[
+                  enrollment._id
+                ] ||
+                enrollment.status;
+
+              return (
+                <article
+                  key={enrollment._id}
+                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7"
+                >
+                  <div className="flex flex-col gap-7 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="max-w-3xl">
+                      <div className="flex flex-wrap gap-2">
+                        <StatusBadge
+                          status={
+                            enrollment.status
+                          }
+                        />
+
+                        <StatusBadge
+                          status={
+                            hasAccess
+                              ? "active"
+                              : "closed"
+                          }
+                          label={
+                            hasAccess
+                              ? "Payment access granted"
+                              : "No approved access"
+                          }
+                        />
+
+                        <StatusBadge
+                          status="inactive"
+                          label={
+                            course
+                              ?.paymentPlan ===
+                            "monthly"
+                              ? "Monthly"
+                              : "One-time"
+                          }
+                        />
+                      </div>
+
+                      <h2 className="mt-4 text-xl font-black text-slate-950">
+                        {student
+                          ?.firstName ||
+                          "Student"}{" "}
+                        {student
+                          ?.lastName ||
+                          ""}
+                      </h2>
+
+                      <p className="mt-1 break-all text-sm text-slate-500">
+                        {student?.email ||
+                          "Email unavailable"}
+                      </p>
+
+                      <p className="mt-4 text-sm font-black text-brand-700">
+                        {course?.code ||
+                          "Course"}{" "}
+                        —{" "}
+                        {course?.title ||
+                          "Course unavailable"}
+                      </p>
+
+                      <dl className="mt-5 grid gap-5 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                        <div>
+                          <dt className="font-bold text-slate-500">
+                            NIC
+                          </dt>
+
+                          <dd className="mt-1 font-black text-slate-950">
+                            {student
+                              ?.nicNumber ||
+                              "—"}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt className="font-bold text-slate-500">
+                            Phone
+                          </dt>
+
+                          <dd className="mt-1 font-black text-slate-950">
+                            {student
+                              ?.mobileNumber ||
+                              "—"}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt className="font-bold text-slate-500">
+                            Created
+                          </dt>
+
+                          <dd className="mt-1 font-black text-slate-950">
+                            {formatDateTime(
+                              enrollment.createdAt
+                            )}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      {course
+                        ?.paymentPlan ===
+                      "monthly" ? (
+                        <div className="mt-5">
+                          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                            Approved billing
+                            periods
+                          </p>
+
+                          {approvedPeriods.length ===
+                          0 ? (
+                            <p className="mt-2 text-sm text-slate-600">
+                              No billing
+                              periods approved.
+                            </p>
+                          ) : (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {approvedPeriods.map(
+                                (period) => (
+                                  <StatusBadge
+                                    key={
+                                      period._id
+                                    }
+                                    status="active"
+                                    label={
+                                      period.label
+                                    }
+                                  />
+                                )
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="mt-5 text-sm font-semibold text-slate-600">
+                          One-time access:{" "}
+                          {hasOneTimeAccess
+                            ? `granted ${formatDateTime(
+                                enrollment.oneTimeAccessGrantedAt
+                              )}`
+                            : "not granted"}
+                        </p>
+                      )}
+
+                      {enrollment.statusReason && (
+                        <div className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                          <strong>
+                            Current reason:
+                          </strong>{" "}
+                          {
+                            enrollment.statusReason
+                          }
+                        </div>
+                      )}
+
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        {student?._id && (
+                          <Link
+                            to={`/admin/students/${student._id}`}
+                            className="text-sm font-black text-brand-700 hover:text-brand-900"
+                          >
+                            Review student
+                          </Link>
+                        )}
+
+                        {course?._id && (
+                          <Link
+                            to={`/admin/courses/${course._id}`}
+                            className="text-sm font-black text-brand-700 hover:text-brand-900"
+                          >
+                            Manage course
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="w-full shrink-0 rounded-2xl bg-slate-50 p-5 xl:w-80">
+                      <label className="block text-xs font-black uppercase tracking-wide text-slate-500">
+                        New status
+                      </label>
+
+                      <select
+                        value={draftStatus}
+                        onChange={(event) =>
+                          setStatusDrafts(
+                            (current) => ({
+                              ...current,
+
+                              [enrollment._id]:
+                                event.target
+                                  .value,
+                            })
+                          )
+                        }
+                        disabled={
+                          busyId ===
+                          enrollment._id
+                        }
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5"
+                      >
+                        {statusOptions.map(
+                          (status) => (
+                            <option
+                              key={status}
+                              value={status}
+                            >
+                              {status
+                                .charAt(0)
+                                .toUpperCase() +
+                                status.slice(
+                                  1
+                                )}
+                            </option>
+                          )
+                        )}
+                      </select>
+
+                      <label className="mt-4 block text-xs font-black uppercase tracking-wide text-slate-500">
+                        Administrative reason
+                      </label>
+
+                      <textarea
+                        rows={4}
+                        value={
+                          reasonDrafts[
+                            enrollment._id
+                          ] || ""
+                        }
+                        onChange={(event) =>
+                          setReasonDrafts(
+                            (current) => ({
+                              ...current,
+
+                              [enrollment._id]:
+                                event.target
+                                  .value,
+                            })
+                          )
+                        }
+                        disabled={
+                          busyId ===
+                          enrollment._id
+                        }
+                        placeholder="Required for suspension or cancellation."
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5"
+                      />
+
+                      <button
+                        type="button"
+                        disabled={
+                          busyId ===
+                            enrollment._id ||
+                          draftStatus ===
+                            enrollment.status
+                        }
+                        onClick={() =>
+                          saveStatus(
+                            enrollment
+                          )
+                        }
+                        className="mt-4 w-full rounded-xl bg-brand-600 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                      >
+                        {busyId ===
+                        enrollment._id
+                          ? "Saving status…"
+                          : "Save enrolment status"}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            }
+          )}
+        </div>
+      )}
+
+      <Pagination
+        currentPage={
+          pagination.currentPage
+        }
+        totalPages={
+          pagination.totalPages
+        }
+        disabled={isLoading}
+        onPageChange={
+          loadEnrollments
+        }
+      />
+    </div>
+  );
+}
+
+============================================================
+FILE: src\index.css
+============================================================
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eef7ff;
+  --color-brand-100: #d8edff;
+  --color-brand-200: #b9ddff;
+  --color-brand-300: #89c8ff;
+  --color-brand-400: #52a8ff;
+  --color-brand-500: #2b83ff;
+  --color-brand-600: #1763f5;
+  --color-brand-700: #124de1;
+  --color-brand-800: #163fb6;
+  --color-brand-900: #18398f;
+  --color-brand-950: #132457;
+
+  --font-sans:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    background: #f8fafc;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background: #f8fafc;
+    color: #0f172a;
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 3px solid rgb(43 131 255 / 25%);
+    outline-offset: 2px;
+  }
+}
+
+

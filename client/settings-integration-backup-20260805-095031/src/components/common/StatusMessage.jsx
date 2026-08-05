@@ -1,13 +1,10 @@
-const variantStyles = {
+﻿const variantStyles = {
   error:
     "border-red-200 bg-red-50 text-red-800",
-
   success:
     "border-emerald-200 bg-emerald-50 text-emerald-800",
-
   info:
     "border-brand-200 bg-brand-50 text-brand-800",
-
   warning:
     "border-amber-200 bg-amber-50 text-amber-900",
 };
@@ -15,7 +12,6 @@ const variantStyles = {
 export default function StatusMessage({
   children,
   variant = "info",
-  className = "",
 }) {
   if (!children) {
     return null;
@@ -32,10 +28,7 @@ export default function StatusMessage({
         "rounded-2xl border px-4 py-3 text-sm font-semibold leading-6",
         variantStyles[variant] ||
           variantStyles.info,
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      ].join(" ")}
     >
       {children}
     </div>

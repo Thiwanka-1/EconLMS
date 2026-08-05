@@ -1,4 +1,4 @@
-import {
+﻿import {
   StrictMode,
 } from "react";
 
@@ -16,10 +16,6 @@ import {
   AuthProvider,
 } from "./auth/AuthContext.jsx";
 
-import {
-  PlatformSettingsProvider,
-} from "./settings/PlatformSettingsContext.jsx";
-
 import "./index.css";
 
 createRoot(
@@ -28,9 +24,7 @@ createRoot(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <PlatformSettingsProvider>
-          <App />
-        </PlatformSettingsProvider>
+        <App />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>
