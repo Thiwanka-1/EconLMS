@@ -742,7 +742,9 @@ export default function YouTubePlaybackPlayer({
         >
           <div
             className={`relative select-none bg-black ${
-              isFullscreen ? "min-h-0 flex-1" : "aspect-video min-h-60"
+              isFullscreen
+                ? "min-h-0 flex-1"
+                : "aspect-video min-h-[200px]"
             }`}
           >
             <div id={playerElementId} className="h-full w-full" />
@@ -761,7 +763,7 @@ export default function YouTubePlaybackPlayer({
 
                 <div
                   aria-hidden="true"
-                  className="pointer-events-auto absolute bottom-0 right-0 z-20 h-14 w-36 rounded-tl-2xl bg-black sm:h-16 sm:w-40"
+                  className="pointer-events-auto absolute bottom-0 right-0 z-20 h-[30%] min-h-16 max-h-40 w-[52%] min-w-40 max-w-md rounded-tl-2xl bg-black sm:h-[27%] sm:w-[40%] lg:h-[24%] lg:w-[34%]"
                 />
               </>
             )}
