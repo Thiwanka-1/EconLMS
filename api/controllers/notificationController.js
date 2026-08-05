@@ -5,8 +5,10 @@ import HttpError from "../utils/HttpError.js";
 const notificationTypes = new Set([
   "payment_approved",
   "payment_rejected",
+  "payment_submitted",
   "nic_verified",
   "nic_rejected",
+  "nic_submitted",
   "system",
 ]);
 

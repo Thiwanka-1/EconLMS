@@ -59,8 +59,10 @@ const notificationSchema =
         enum: [
           "payment_approved",
           "payment_rejected",
+          "payment_submitted",
           "nic_verified",
           "nic_rejected",
+          "nic_submitted",
           "system",
         ],
         required: true,

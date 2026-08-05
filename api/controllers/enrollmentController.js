@@ -14,6 +14,10 @@ import {
   uploadPaymentSlipToDrive,
 } from "../utils/googleDrive.js";
 
+import {
+  notifyAdminsOfPaymentSubmission,
+} from "../services/adminNotificationService.js";
+
 const getOrCreateEnrollment = async ({
   student,
   course,
@@ -258,6 +262,21 @@ export const submitPaymentSlip =
 
           status: "pending",
         });
+
+      try {
+        await notifyAdminsOfPaymentSubmission({
+          paymentSubmission,
+          student: req.user,
+          course,
+          billingPeriod,
+        });
+      } catch (notificationError) {
+        // A completed upload must not be rolled back if an alert fails.
+        console.error(
+          "[ADMIN_NOTIFICATION] Payment submission alert failed:",
+          notificationError.message,
+        );
+      }
 
       res.status(201).json({
         success: true,

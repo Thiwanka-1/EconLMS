@@ -40,6 +40,10 @@ import {
   validateEnvironment,
 } from "./utils/validateEnvironment.js";
 
+import {
+  backfillPendingAdminNotifications,
+} from "./services/adminNotificationService.js";
+
 /*
  * Routes
  */
@@ -323,6 +327,26 @@ const startServer = async () => {
       console.error(
         "[SCHEDULER] Startup billing generation failed:",
         error.message
+      );
+    }
+
+    /*
+     * Restore in-app alerts for submissions that
+     * were already pending before this feature.
+     * Deduplication makes this safe on every restart.
+     */
+    try {
+      const notificationBackfill =
+        await backfillPendingAdminNotifications();
+
+      console.log(
+        "[ADMIN_NOTIFICATION] Pending notification catch-up completed:",
+        notificationBackfill,
+      );
+    } catch (error) {
+      console.error(
+        "[ADMIN_NOTIFICATION] Pending notification catch-up failed:",
+        error.message,
       );
     }
 

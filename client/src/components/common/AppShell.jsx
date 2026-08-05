@@ -1,4 +1,6 @@
 import {
+  useCallback,
+  useEffect,
   useState,
 } from "react";
 
@@ -11,6 +13,10 @@ import {
 import {
   useAuth,
 } from "../../auth/useAuth.js";
+
+import {
+  getMyUnreadNotificationCount,
+} from "../../api/notificationApi.js";
 
 import {
   usePlatformSettings,
@@ -56,8 +62,54 @@ export default function AppShell({
     setIsLoggingOut,
   ] = useState(false);
 
+  const [
+    unreadNotificationCount,
+    setUnreadNotificationCount,
+  ] = useState(0);
+
   const platformName =
     settings.branding.platformName;
+
+  const loadUnreadNotificationCount =
+    useCallback(async () => {
+      if (!user?._id) {
+        setUnreadNotificationCount(0);
+        return;
+      }
+
+      try {
+        const result =
+          await getMyUnreadNotificationCount();
+
+        setUnreadNotificationCount(
+          Math.max(
+            Number(result.unreadCount || 0),
+            0,
+          ),
+        );
+      } catch {
+        // Notification polling must not disrupt the portal shell.
+      }
+    }, [user?._id]);
+
+  useEffect(() => {
+    void loadUnreadNotificationCount();
+
+    const intervalId = window.setInterval(() => {
+      void loadUnreadNotificationCount();
+    }, 30000);
+
+    const handleWindowFocus = () => {
+      void loadUnreadNotificationCount();
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [loadUnreadNotificationCount]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -113,7 +165,7 @@ export default function AppShell({
                     isActive,
                   }) =>
                     [
-                      "whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition",
+                      "inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition",
                       isActive
                         ? "bg-brand-50 text-brand-700"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
@@ -121,6 +173,15 @@ export default function AppShell({
                   }
                 >
                   {item.label}
+
+                  {item.to.endsWith("/notifications") &&
+                    unreadNotificationCount > 0 && (
+                      <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-black leading-none text-white">
+                        {unreadNotificationCount > 99
+                          ? "99+"
+                          : unreadNotificationCount}
+                      </span>
+                    )}
                 </NavLink>
               )
             )}

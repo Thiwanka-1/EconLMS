@@ -13,6 +13,10 @@ import {
   processNicDecisionSideEffects,
 } from "../services/decisionNotificationService.js";
 
+import {
+  notifyAdminsOfNicSubmission,
+} from "../services/adminNotificationService.js";
+
 
 
 const getStudentWithNicFile =
@@ -212,6 +216,18 @@ export const uploadMyNicImage =
           error.message
         );
       }
+    }
+
+    try {
+      await notifyAdminsOfNicSubmission({
+        student,
+      });
+    } catch (notificationError) {
+      // The uploaded NIC must remain valid even if an alert fails.
+      console.error(
+        "[ADMIN_NOTIFICATION] NIC submission alert failed:",
+        notificationError.message,
+      );
     }
 
     res.status(200).json({

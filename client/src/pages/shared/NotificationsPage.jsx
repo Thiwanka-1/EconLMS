@@ -42,12 +42,20 @@ const notificationTypes = [
     label: "Payment rejected",
   },
   {
+    value: "payment_submitted",
+    label: "Payment submitted",
+  },
+  {
     value: "nic_verified",
     label: "NIC verified",
   },
   {
     value: "nic_rejected",
     label: "NIC rejected",
+  },
+  {
+    value: "nic_submitted",
+    label: "NIC submitted",
   },
   {
     value: "system",
