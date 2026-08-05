@@ -749,21 +749,24 @@ export default function YouTubePlaybackPlayer({
           >
             <div id={playerElementId} className="h-full w-full" />
 
-            {/*
-              These masks cover YouTube's Share and Watch-on-YouTube areas.
-              They are intentionally small because all actual playback controls
-              are rendered below the iframe by this component.
-            */}
             {isReady && (
               <>
+                {/* Keep YouTube's external title/channel link from receiving clicks. */}
                 <div
                   aria-hidden="true"
-                  className="pointer-events-auto absolute bottom-0 left-0 z-20 h-14 w-24 rounded-tr-2xl bg-black sm:h-16 sm:w-28"
+                  className="pointer-events-auto absolute inset-x-0 top-0 z-20 h-[clamp(52px,18%,96px)] cursor-default touch-none bg-transparent"
                 />
 
+                {/* Share moves to the lower-left on compact YouTube layouts. */}
                 <div
                   aria-hidden="true"
-                  className="pointer-events-auto absolute bottom-0 right-0 z-20 h-[30%] min-h-16 max-h-40 w-[52%] min-w-40 max-w-md rounded-tl-2xl bg-black sm:h-[27%] sm:w-[40%] lg:h-[24%] lg:w-[34%]"
+                  className="pointer-events-auto absolute bottom-0 left-0 z-20 h-[clamp(64px,32%,160px)] w-[55%] cursor-default touch-none bg-transparent"
+                />
+
+                {/* Keep the Watch on YouTube link from receiving clicks. */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-auto absolute bottom-0 right-0 z-20 h-[clamp(64px,32%,160px)] w-[55%] cursor-default touch-none bg-transparent"
                 />
               </>
             )}
