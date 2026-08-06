@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "audit:zoom": "node utils/auditZoomSecurity.js",
     "seed:admin": "node utils/createAdmin.js",
     "seed:courses": "node utils/seedCourses.js",
     "setup:gdrive": "node utils/setupGoogleDrive.js"

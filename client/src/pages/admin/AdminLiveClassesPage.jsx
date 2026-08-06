@@ -485,9 +485,14 @@ export default function AdminLiveClassesPage() {
 
         <p className="mt-2 text-sm leading-6 text-slate-600">
           Create the meeting in Zoom
-          first. It must be a scheduled,
-          non-recurring meeting with
-          registration enabled.
+          first. Use a generated ID,
+          manual registration approval,
+          and require the authentication
+          profile &quot;Signed in to account
+          associated with invited
+          email&quot;. Disable showing join
+          information on the registration
+          confirmation page.
         </p>
 
         <form

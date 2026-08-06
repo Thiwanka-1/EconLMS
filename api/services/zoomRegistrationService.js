@@ -5,8 +5,16 @@ import ZoomRegistration from "../models/ZoomRegistration.js";
 
 import {
   addZoomMeetingRegistrant,
+  approveZoomMeetingRegistrant,
+  deleteZoomMeetingRegistrant,
   findZoomRegistrantByEmail,
+  getZoomMeeting,
+  getZoomMeetingRegistrant,
 } from "../utils/zoom.js";
+
+import {
+  getZoomMeetingSecurityIssues,
+} from "../utils/zoomMeetingSecurity.js";
 
 import {
   decryptText,
@@ -27,6 +35,29 @@ const getLiveClassWithMeetingId = async (liveClassValue) => {
   }
 
   return LiveClass.findById(liveClassId).select("+zoomMeetingId");
+};
+
+const verifySecureZoomMeeting = async (
+  meetingId
+) => {
+  const zoomMeeting =
+    await getZoomMeeting(meetingId);
+
+  const securityIssues =
+    getZoomMeetingSecurityIssues(
+      zoomMeeting
+    );
+
+  if (securityIssues.length > 0) {
+    throw new HttpError(
+      400,
+      `The Zoom meeting is not secure enough for EconLMS. ${securityIssues.join(
+        " "
+      )}`
+    );
+  }
+
+  return zoomMeeting;
 };
 
 export const checkStudentLiveClassAccess =
@@ -109,6 +140,7 @@ export const ensureStudentZoomRegistration =
   async ({
     student: studentValue,
     liveClass: liveClassValue,
+    securityVerified = false,
   }) => {
     const student =
       typeof studentValue === "object" &&
@@ -139,6 +171,12 @@ export const ensureStudentZoomRegistration =
       throw new HttpError(
         400,
         "The student does not have a Zoom email address."
+      );
+    }
+
+    if (!securityVerified) {
+      await verifySecureZoomMeeting(
+        liveClass.zoomMeetingId
       );
     }
 
@@ -216,6 +254,36 @@ export const ensureStudentZoomRegistration =
 
           email: student.zoomEmail,
         });
+
+      if (
+        zoomRegistrant &&
+        !zoomRegistrant.join_url
+      ) {
+        const registrantId =
+          zoomRegistrant.registrant_id ||
+          zoomRegistrant.id;
+
+        if (registrantId) {
+          if (
+            zoomRegistrant.status ===
+            "pending"
+          ) {
+            await approveZoomMeetingRegistrant({
+              meetingId:
+                liveClass.zoomMeetingId,
+              registrantId,
+              email: student.zoomEmail,
+            });
+          }
+
+          zoomRegistrant =
+            await getZoomMeetingRegistrant({
+              meetingId:
+                liveClass.zoomMeetingId,
+              registrantId,
+            });
+        }
+      }
 
       if (
         !zoomRegistrant?.join_url
@@ -301,7 +369,10 @@ export const getDecryptedJoinUrl = (
 };
 
 export const syncLiveClassRegistrations =
-  async (liveClassValue) => {
+  async (
+    liveClassValue,
+    { securityVerified = false } = {}
+  ) => {
     const liveClass = await getLiveClassWithMeetingId(liveClassValue);
 
     if (!liveClass) {
@@ -310,6 +381,12 @@ export const syncLiveClassRegistrations =
 
     if (!liveClass.zoomMeetingId) {
       throw new HttpError(500, "The live class does not have a Zoom meeting ID.");
+    }
+
+    if (!securityVerified) {
+      await verifySecureZoomMeeting(
+        liveClass.zoomMeetingId
+      );
     }
 
     const enrollmentFilter = {
@@ -361,6 +438,7 @@ export const syncLiveClassRegistrations =
           {
             student,
             liveClass,
+            securityVerified: true,
           }
         );
 
@@ -450,6 +528,124 @@ export const registerStudentForEligibleLiveClasses =
       success:
         failureCount === 0,
 
+      successCount,
+      failureCount,
+      failures,
+    };
+  };
+
+const revokeZoomRegistration = async (
+  registration
+) => {
+  let registrantId =
+    registration.zoomRegistrantId;
+
+  if (!registrantId) {
+    const zoomRegistrant =
+      await findZoomRegistrantByEmail({
+        meetingId:
+          registration.zoomMeetingId,
+        email: registration.zoomEmail,
+      });
+
+    registrantId =
+      zoomRegistrant?.registrant_id ||
+      zoomRegistrant?.id ||
+      null;
+  }
+
+  if (registrantId) {
+    await deleteZoomMeetingRegistrant({
+      meetingId:
+        registration.zoomMeetingId,
+      registrantId,
+    });
+  }
+
+  registration.status = "cancelled";
+  registration.encryptedJoinUrl = null;
+  registration.lastError = "";
+
+  await registration.save();
+};
+
+export const revokeZoomRegistrations =
+  async ({
+    studentId,
+    courseId,
+    liveClassId,
+  }) => {
+    if (
+      !studentId &&
+      !courseId &&
+      !liveClassId
+    ) {
+      throw new Error(
+        "A student, course or live class is required to revoke Zoom registrations."
+      );
+    }
+
+    const filter = {
+      status: {
+        $ne: "cancelled",
+      },
+    };
+
+    if (studentId) {
+      filter.student = studentId;
+    }
+
+    if (courseId) {
+      filter.course = courseId;
+    }
+
+    if (liveClassId) {
+      filter.liveClass = liveClassId;
+    }
+
+    const registrations =
+      await ZoomRegistration.find(
+        filter
+      ).select(
+        "+zoomMeetingId +encryptedJoinUrl"
+      );
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    const failures = [];
+
+    for (const registration of registrations) {
+      try {
+        await revokeZoomRegistration(
+          registration
+        );
+
+        successCount += 1;
+      } catch (error) {
+        failureCount += 1;
+
+        registration.lastError = String(
+          error.message ||
+            "Zoom access revocation failed."
+        ).slice(0, 1000);
+
+        await registration
+          .save()
+          .catch(() => {});
+
+        failures.push({
+          registrationId:
+            registration._id,
+          studentId:
+            registration.student,
+          error: error.message,
+        });
+      }
+    }
+
+    return {
+      success: failureCount === 0,
       successCount,
       failureCount,
       failures,

@@ -22,6 +22,10 @@ import {
   notifyStudentOfPaymentSubmission,
 } from "../services/studentNotificationService.js";
 
+import {
+  revokeZoomRegistrations,
+} from "../services/zoomRegistrationService.js";
+
 const getOrCreateEnrollment = async ({
   student,
   course,
@@ -561,11 +565,45 @@ export const setEnrollmentStatus =
 
     await enrollment.save();
 
+    let zoomRegistrationRevocation =
+      null;
+
+    if (
+      status === "suspended" ||
+      status === "cancelled"
+    ) {
+      try {
+        zoomRegistrationRevocation =
+          await revokeZoomRegistrations({
+            studentId:
+              enrollment.student,
+            courseId:
+              enrollment.course,
+          });
+      } catch (error) {
+        console.error(
+          "Zoom registration revocation failed after enrolment status update:",
+          error.message
+        );
+
+        zoomRegistrationRevocation = {
+          success: false,
+          successCount: 0,
+          failureCount: 0,
+          error: error.message,
+        };
+      }
+    }
+
     res.status(200).json({
       success: true,
       message:
-        "Enrolment status updated.",
+        zoomRegistrationRevocation
+          ?.success === false
+          ? "Enrolment status updated, but one or more Zoom registrations could not be revoked. Retry this status update before the class starts."
+          : "Enrolment status updated.",
       enrollment,
+      zoomRegistrationRevocation,
     });
   });
 

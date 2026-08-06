@@ -19,8 +19,14 @@ import {
   checkStudentLiveClassAccess,
   ensureStudentZoomRegistration,
   getDecryptedJoinUrl,
+  revokeZoomRegistrations,
   syncLiveClassRegistrations,
 } from "../services/zoomRegistrationService.js";
+
+import {
+  describeZoomAuthentication,
+  getZoomMeetingSecurityIssues,
+} from "../utils/zoomMeetingSecurity.js";
 
 import {
   getPlatformSettings,
@@ -267,17 +273,17 @@ export const createLiveClass =
       );
     }
 
-    /*
-     * approval_type 2 means that registration
-     * is not enabled for the meeting.
-     */
-    if (
-      zoomMeeting.settings
-        ?.approval_type === 2
-    ) {
+    const securityIssues =
+      getZoomMeetingSecurityIssues(
+        zoomMeeting
+      );
+
+    if (securityIssues.length > 0) {
       throw new HttpError(
         400,
-        "Registration is not enabled for this Zoom meeting."
+        `The Zoom meeting is not secure enough for EconLMS. ${securityIssues.join(
+          " "
+        )}`
       );
     }
 
@@ -386,7 +392,10 @@ export const createLiveClass =
       try {
         registrationSync =
           await syncLiveClassRegistrations(
-            liveClass
+            liveClass,
+            {
+              securityVerified: true,
+            }
           );
       } catch (error) {
         console.error(
@@ -431,6 +440,11 @@ export const createLiveClass =
         ),
 
       registrationSync,
+
+      zoomAuthentication:
+        describeZoomAuthentication(
+          zoomMeeting
+        ),
     });
   });
 
@@ -732,6 +746,20 @@ export const refreshLiveClassFromZoom =
         liveClass.zoomMeetingId
       );
 
+    const securityIssues =
+      getZoomMeetingSecurityIssues(
+        zoomMeeting
+      );
+
+    if (securityIssues.length > 0) {
+      throw new HttpError(
+        400,
+        `The Zoom meeting is not secure enough for EconLMS. ${securityIssues.join(
+          " "
+        )}`
+      );
+    }
+
     if (!zoomMeeting.start_time) {
       throw new HttpError(
         502,
@@ -780,6 +808,11 @@ export const refreshLiveClassFromZoom =
         serializeAdminLiveClass(
           liveClass
         ),
+
+      zoomAuthentication:
+        describeZoomAuthentication(
+          zoomMeeting
+        ),
     });
   });
 
@@ -821,6 +854,32 @@ export const updateLiveClassStatus = asyncHandler(async (req, res) => {
   await liveClass.save();
 
   let registrationSync = null;
+  let registrationRevocation = null;
+
+  const shouldRevoke =
+    !liveClass.isPublished ||
+    liveClass.status !== "scheduled";
+
+  if (shouldRevoke) {
+    try {
+      registrationRevocation =
+        await revokeZoomRegistrations({
+          liveClassId: liveClass._id,
+        });
+    } catch (error) {
+      console.error(
+        "Zoom registration revocation failed after live-class status update:",
+        error.message
+      );
+
+      registrationRevocation = {
+        success: false,
+        successCount: 0,
+        failureCount: 0,
+        error: error.message,
+      };
+    }
+  }
 
   const shouldSynchronize =
     liveClass.isPublished &&
@@ -850,5 +909,6 @@ export const updateLiveClassStatus = asyncHandler(async (req, res) => {
     message: "Live-class status updated.",
     liveClass,
     registrationSync,
+    registrationRevocation,
   });
 });

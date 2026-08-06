@@ -109,8 +109,11 @@ Test in this order:
 5. Upload a test NIC image and payment slip, then view both from the admin
    portal.
 6. Approve the payment and verify enrollment access and notifications.
-7. Add a scheduled Zoom meeting with registration enabled and test the join
-   window.
+7. Add a generated-ID, non-recurring Zoom meeting with registration set to
+   manual approval. Enable "Require authentication to join", select "Signed in
+   to account associated with invited email", and disable showing join info on
+   the registration confirmation page. Connect it in EconLMS and test the join
+   window with one paid and one unpaid account.
 8. Add a YouTube lesson and verify playback limits and heartbeats.
 
 If login succeeds but `/api/auth/me` immediately returns 401, first re-check the

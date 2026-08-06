@@ -291,7 +291,12 @@ export const findZoomRegistrantByEmail =
           );
 
         if (registrant) {
-          return registrant;
+          return {
+            ...registrant,
+            status:
+              registrant.status ||
+              status,
+          };
         }
 
         nextPageToken =
@@ -300,4 +305,112 @@ export const findZoomRegistrantByEmail =
     }
 
     return null;
+  };
+
+export const getZoomMeetingRegistrant =
+  async ({
+    meetingId,
+    registrantId,
+  }) => {
+    const normalizedMeetingId =
+      normalizeZoomMeetingId(meetingId);
+
+    const normalizedRegistrantId =
+      String(registrantId || "").trim();
+
+    if (
+      !normalizedMeetingId ||
+      !normalizedRegistrantId
+    ) {
+      throw new ZoomApiError({
+        message:
+          "A meeting ID and registrant ID are required.",
+        status: 400,
+      });
+    }
+
+    return zoomRequest(
+      `/meetings/${normalizedMeetingId}/registrants/${encodeURIComponent(
+        normalizedRegistrantId
+      )}`
+    );
+  };
+
+export const approveZoomMeetingRegistrant =
+  async ({
+    meetingId,
+    registrantId,
+    email,
+  }) => {
+    const normalizedMeetingId =
+      normalizeZoomMeetingId(meetingId);
+
+    const normalizedRegistrantId =
+      String(registrantId || "").trim();
+
+    const normalizedEmail = String(
+      email || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (
+      !normalizedMeetingId ||
+      !normalizedRegistrantId ||
+      !normalizedEmail
+    ) {
+      throw new ZoomApiError({
+        message:
+          "A meeting ID, registrant ID and email are required to approve Zoom access.",
+        status: 400,
+      });
+    }
+
+    return zoomRequest(
+      `/meetings/${normalizedMeetingId}/registrants/status`,
+      {
+        method: "PUT",
+        body: {
+          action: "approve",
+          registrants: [
+            {
+              id: normalizedRegistrantId,
+              email: normalizedEmail,
+            },
+          ],
+        },
+      }
+    );
+  };
+
+export const deleteZoomMeetingRegistrant =
+  async ({
+    meetingId,
+    registrantId,
+  }) => {
+    const normalizedMeetingId =
+      normalizeZoomMeetingId(meetingId);
+
+    const normalizedRegistrantId =
+      String(registrantId || "").trim();
+
+    if (
+      !normalizedMeetingId ||
+      !normalizedRegistrantId
+    ) {
+      throw new ZoomApiError({
+        message:
+          "A meeting ID and registrant ID are required to revoke Zoom access.",
+        status: 400,
+      });
+    }
+
+    return zoomRequest(
+      `/meetings/${normalizedMeetingId}/registrants/${encodeURIComponent(
+        normalizedRegistrantId
+      )}`,
+      {
+        method: "DELETE",
+      }
+    );
   };
