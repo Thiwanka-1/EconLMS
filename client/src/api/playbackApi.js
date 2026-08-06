@@ -5,6 +5,7 @@ import {
 export const startLessonPlayback = ({
   lessonId,
   sessionId = "",
+  watchedSeconds = 0,
 }) => {
   const normalizedSessionId =
     String(sessionId || "").trim();
@@ -20,6 +21,14 @@ export const startLessonPlayback = ({
         ? {
             sessionId:
               normalizedSessionId,
+
+            watchedSeconds:
+              Math.max(
+                Number(
+                  watchedSeconds
+                ) || 0,
+                0
+              ),
           }
         : {},
     }

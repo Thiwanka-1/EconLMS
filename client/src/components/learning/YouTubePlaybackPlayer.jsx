@@ -15,6 +15,7 @@ import {
 import { useAuth } from "../../auth/useAuth.js";
 
 import { loadYouTubeIframeApi } from "../../utils/youtubeApi.js";
+import { setStoredPlaybackProgress } from "../../utils/playbackSessionStorage.js";
 
 import StatusMessage from "../common/StatusMessage.jsx";
 
@@ -151,8 +152,8 @@ export default function YouTubePlaybackPlayer({
   const heartbeatInFlightRef = useRef(false);
   const endingPromiseRef = useRef(null);
   const watchedSecondsRef = useRef(initialWatchedSeconds);
+  const furthestWatchedSecondsRef = useRef(initialWatchedSeconds);
   const durationSecondsRef = useRef(initialDurationSeconds);
-  const isSeekingRef = useRef(false);
 
   const [isReady, setIsReady] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
@@ -163,9 +164,6 @@ export default function YouTubePlaybackPlayer({
   const [volume, setVolume] = useState(100);
   const [playbackRate, setPlaybackRateState] = useState(1);
   const [availablePlaybackRates, setAvailablePlaybackRates] = useState([1]);
-  const [seekPreviewSeconds, setSeekPreviewSeconds] = useState(
-    initialWatchedSeconds,
-  );
   const [error, setError] = useState("");
   const [watchedSeconds, setWatchedSeconds] = useState(
     initialWatchedSeconds,
@@ -202,16 +200,30 @@ export default function YouTubePlaybackPlayer({
   }, [isReady]);
 
   const updateStoredMetrics = useCallback(({ watched, duration }) => {
-    watchedSecondsRef.current = watched;
-    durationSecondsRef.current = duration;
+    const nextWatchedSeconds = Math.max(
+      furthestWatchedSecondsRef.current,
+      Number(watched) || 0,
+      0,
+    );
+    const nextDurationSeconds = Math.max(
+      durationSecondsRef.current,
+      Number(duration) || 0,
+      0,
+    );
 
-    if (!isSeekingRef.current) {
-      setWatchedSeconds(watched);
-      setSeekPreviewSeconds(watched);
-    }
+    furthestWatchedSecondsRef.current = nextWatchedSeconds;
+    watchedSecondsRef.current = nextWatchedSeconds;
+    durationSecondsRef.current = nextDurationSeconds;
 
-    setDurationSeconds(duration);
-  }, []);
+    setWatchedSeconds(nextWatchedSeconds);
+    setDurationSeconds(nextDurationSeconds);
+
+    setStoredPlaybackProgress({
+      lessonId: playbackSession.lesson._id,
+      sessionId: playbackSession.sessionId,
+      watchedSeconds: nextWatchedSeconds,
+    });
+  }, [playbackSession.lesson._id, playbackSession.sessionId]);
 
   const getPlayerMetrics = useCallback(() => {
     let currentTime = watchedSecondsRef.current;
@@ -238,7 +250,11 @@ export default function YouTubePlaybackPlayer({
     }
 
     return {
-      watched: Math.max(currentTime, 0),
+      watched: Math.max(
+        currentTime,
+        furthestWatchedSecondsRef.current,
+        0,
+      ),
       duration: Math.max(duration, 0),
     };
   }, []);
@@ -397,48 +413,28 @@ export default function YouTubePlaybackPlayer({
       }
 
       try {
-        const current = Number(playerRef.current?.getCurrentTime?.()) || 0;
+        const forwardSeconds = Math.max(Number(seconds) || 0, 0);
+        const current = Math.max(
+          Number(playerRef.current?.getCurrentTime?.()) || 0,
+          furthestWatchedSecondsRef.current,
+        );
         const duration = Number(playerRef.current?.getDuration?.()) || 0;
         const nextTime =
           duration > 0
-            ? clamp(current + seconds, 0, duration)
-            : Math.max(current + seconds, 0);
+            ? clamp(current + forwardSeconds, 0, duration)
+            : Math.max(current + forwardSeconds, 0);
 
         playerRef.current?.seekTo?.(nextTime, true);
-        watchedSecondsRef.current = nextTime;
-        setWatchedSeconds(nextTime);
-        setSeekPreviewSeconds(nextTime);
+        updateStoredMetrics({
+          watched: nextTime,
+          duration,
+        });
       } catch {
         setError("The video position could not be changed.");
       }
     },
-    [isReady],
+    [isReady, updateStoredMetrics],
   );
-
-  const beginSeeking = useCallback(() => {
-    isSeekingRef.current = true;
-  }, []);
-
-  const updateSeekPreview = useCallback((event) => {
-    isSeekingRef.current = true;
-    setSeekPreviewSeconds(Number(event.target.value));
-  }, []);
-
-  const commitSeek = useCallback(() => {
-    if (!isSeekingRef.current) {
-      return;
-    }
-
-    isSeekingRef.current = false;
-
-    try {
-      playerRef.current?.seekTo?.(seekPreviewSeconds, true);
-      watchedSecondsRef.current = seekPreviewSeconds;
-      setWatchedSeconds(seekPreviewSeconds);
-    } catch {
-      setError("The video position could not be changed.");
-    }
-  }, [seekPreviewSeconds]);
 
   const toggleMute = useCallback(() => {
     if (!isReady) {
@@ -537,6 +533,12 @@ export default function YouTubePlaybackPlayer({
             enablejsapi: 1,
             autoplay: 0,
             loop: 0,
+            start:
+              playbackSession.resumed
+                ? Math.floor(
+                    initialWatchedSeconds
+                  )
+                : 0,
             origin: window.location.origin,
           },
 
@@ -560,7 +562,10 @@ export default function YouTubePlaybackPlayer({
 
               try {
                 const duration = Number(event.target.getDuration?.()) || 0;
-                const currentTime = Number(event.target.getCurrentTime?.()) || 0;
+                const currentTime = Math.max(
+                  Number(event.target.getCurrentTime?.()) || 0,
+                  playbackSession.resumed ? resumePosition : 0,
+                );
                 const currentVolume = Number(event.target.getVolume?.());
                 const rates = event.target.getAvailablePlaybackRates?.() || [1];
                 const currentRate = Number(event.target.getPlaybackRate?.()) || 1;
@@ -602,6 +607,11 @@ export default function YouTubePlaybackPlayer({
               if (event.data === YT.PlayerState.ENDED) {
                 void finishPlayback("completed");
               }
+
+              if (event.data === YT.PlayerState.PAUSED) {
+                updateStoredMetrics(getPlayerMetrics());
+                void sendHeartbeatNow();
+              }
             },
 
             onPlaybackRateChange: (event) => {
@@ -642,6 +652,9 @@ export default function YouTubePlaybackPlayer({
     playbackSession.lesson.youtubeVideoId,
     playbackSession.playback?.activeSession?.watchedSeconds,
     playbackSession.resumed,
+    getPlayerMetrics,
+    initialWatchedSeconds,
+    sendHeartbeatNow,
     updateStoredMetrics,
   ]);
 
@@ -662,17 +675,75 @@ export default function YouTubePlaybackPlayer({
 
   useEffect(() => {
     const displayTimer = window.setInterval(() => {
-      if (closedRef.current || isSeekingRef.current) {
+      if (closedRef.current) {
         return;
       }
 
-      updateStoredMetrics(getPlayerMetrics());
+      const metrics = getPlayerMetrics();
+
+      try {
+        const currentTime = Number(
+          playerRef.current?.getCurrentTime?.()
+        );
+
+        if (
+          isReady &&
+          Number.isFinite(currentTime) &&
+          currentTime + 1.5 <
+            furthestWatchedSecondsRef.current
+        ) {
+          playerRef.current?.seekTo?.(
+            furthestWatchedSecondsRef.current,
+            true
+          );
+        }
+      } catch {
+        // The next timer tick will retry.
+      }
+
+      updateStoredMetrics(metrics);
     }, 500);
 
     return () => {
       window.clearInterval(displayTimer);
     };
-  }, [getPlayerMetrics, updateStoredMetrics]);
+  }, [getPlayerMetrics, isReady, updateStoredMetrics]);
+
+  useEffect(() => {
+    const persistCurrentPosition = () => {
+      updateStoredMetrics(
+        getPlayerMetrics()
+      );
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        persistCurrentPosition();
+        void sendHeartbeatNow();
+      }
+    };
+
+    window.addEventListener(
+      "pagehide",
+      persistCurrentPosition
+    );
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        "pagehide",
+        persistCurrentPosition
+      );
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+      persistCurrentPosition();
+    };
+  }, [getPlayerMetrics, sendHeartbeatNow, updateStoredMetrics]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -705,19 +776,9 @@ export default function YouTubePlaybackPlayer({
           togglePlayback();
           break;
 
-        case "arrowleft":
-          event.preventDefault();
-          seekBy(-5);
-          break;
-
         case "arrowright":
           event.preventDefault();
           seekBy(5);
-          break;
-
-        case "j":
-          event.preventDefault();
-          seekBy(-10);
           break;
 
         case "l":
@@ -741,9 +802,7 @@ export default function YouTubePlaybackPlayer({
     }, [seekBy, toggleFullscreen, toggleMute, togglePlayback],
   );
 
-  const displayedTime = isSeekingRef.current
-    ? seekPreviewSeconds
-    : watchedSeconds;
+  const displayedTime = watchedSeconds;
 
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
@@ -875,29 +934,13 @@ export default function YouTubePlaybackPlayer({
           </div>
 
           <div className="shrink-0 border-t border-white/10 bg-slate-950 px-3 py-3 text-white sm:px-4">
-            <div className="flex items-center gap-3">
-              <span className="w-12 text-right text-xs font-bold tabular-nums text-slate-300">
-                {formatDuration(displayedTime)}
+            <div className="flex items-center justify-between gap-3 text-xs font-bold tabular-nums text-slate-300">
+              <span>
+                Watched {formatDuration(displayedTime)}
               </span>
 
-              <input
-                type="range"
-                min="0"
-                max={Math.max(durationSeconds, 0)}
-                step="0.1"
-                value={Math.min(displayedTime, Math.max(durationSeconds, 0))}
-                disabled={!isReady || durationSeconds <= 0}
-                onPointerDown={beginSeeking}
-                onChange={updateSeekPreview}
-                onPointerUp={commitSeek}
-                onPointerCancel={commitSeek}
-                onKeyUp={commitSeek}
-                aria-label="Video position"
-                className="h-2 min-w-0 flex-1 cursor-pointer accent-white disabled:cursor-not-allowed disabled:opacity-50"
-              />
-
-              <span className="w-12 text-xs font-bold tabular-nums text-slate-300">
-                {formatDuration(durationSeconds)}
+              <span>
+                Duration {formatDuration(durationSeconds)}
               </span>
             </div>
 
@@ -910,16 +953,6 @@ export default function YouTubePlaybackPlayer({
                 aria-label={isPlaying ? "Pause video" : "Play video"}
               >
                 <PlayIcon isPlaying={isPlaying} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => seekBy(-10)}
-                disabled={!isReady}
-                className="h-10 rounded-xl bg-white/10 px-3 text-xs font-black transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Go back 10 seconds"
-              >
-                −10s
               </button>
 
               <button

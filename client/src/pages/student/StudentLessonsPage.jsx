@@ -25,8 +25,9 @@ import YouTubePlaybackPlayer from "../../components/learning/YouTubePlaybackPlay
 
 import {
   clearStoredPlaybackSessionId,
+  getStoredPlaybackSession,
   getStoredPlaybackSessionId,
-  setStoredPlaybackSessionId,
+  setStoredPlaybackProgress,
 } from "../../utils/playbackSessionStorage.js";
 
 import {
@@ -152,8 +153,8 @@ export default function StudentLessonsPage() {
         lesson._id
       );
 
-      const storedSessionId =
-        getStoredPlaybackSessionId(
+      const storedSession =
+        getStoredPlaybackSession(
           lesson._id
         );
 
@@ -166,13 +167,22 @@ export default function StudentLessonsPage() {
               lesson._id,
 
             sessionId:
-              storedSessionId,
+              storedSession.sessionId,
+
+            watchedSeconds:
+              storedSession.watchedSeconds,
           });
 
-        setStoredPlaybackSessionId(
-          lesson._id,
-          result.sessionId
-        );
+        setStoredPlaybackProgress({
+          lessonId:
+            lesson._id,
+          sessionId:
+            result.sessionId,
+          watchedSeconds:
+            result.playback
+              ?.activeSession
+              ?.watchedSeconds || 0,
+        });
 
         setActivePlayback(
           result

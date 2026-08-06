@@ -17,7 +17,6 @@ import {
   finalizeStaleSessionIfNeeded,
   getLessonViewSummary,
   getOrCreateLessonView,
-  isPlaybackSessionStale,
 } from "../utils/playback.js";
 
 const getAvailableLesson = async (
@@ -102,6 +101,13 @@ export const startPlayback =
         ? req.body.sessionId.trim()
         : "";
 
+    const requestedWatchedSeconds =
+      Math.max(
+        Number(
+          req.body?.watchedSeconds
+        ) || 0,
+        0
+      );
 
     let lessonView =
       await getOrCreateLessonView({
@@ -109,25 +115,60 @@ export const startPlayback =
         lesson,
       });
 
-    lessonView =
-      await finalizeStaleSessionIfNeeded(
-        lessonView
+    /*
+     * Check the caller's session before applying
+     * the stale-session timeout. A refresh or Back
+     * navigation can therefore recover the same
+     * browser session without consuming a view.
+     */
+    if (
+      lessonView.activeSession &&
+      requestedSessionId &&
+      requestedSessionId ===
+        lessonView.activeSession.sessionId
+    ) {
+      const knownDuration = Math.max(
+        Number(
+          lessonView.activeSession
+            .durationSeconds
+        ) || 0,
+        0
       );
 
-    /*
- * Refreshing the same player can resume only
- * when it presents the existing session ID.
- * A different browser or tab cannot silently
- * take over the active playback session.
- */
-    if (lessonView.activeSession) {
-      if (
-        !requestedSessionId ||
-        requestedSessionId !== lessonView.activeSession.sessionId
-      ) {
+      const resumedWatchedSeconds =
+        knownDuration > 0
+          ? Math.min(
+              requestedWatchedSeconds,
+              knownDuration
+            )
+          : requestedWatchedSeconds;
+
+      lessonView =
+        await LessonView.findOneAndUpdate(
+          {
+            _id: lessonView._id,
+            "activeSession.sessionId":
+              requestedSessionId,
+          },
+          {
+            $set: {
+              "activeSession.lastHeartbeatAt":
+                new Date(),
+            },
+            $max: {
+              "activeSession.watchedSeconds":
+                resumedWatchedSeconds,
+            },
+          },
+          {
+            returnDocument: "after",
+          }
+        );
+
+      if (!lessonView?.activeSession) {
         throw new HttpError(
           409,
-          "This lesson already has an active playback session."
+          "The playback session could not be resumed. Please try again."
         );
       }
 
@@ -164,6 +205,18 @@ export const startPlayback =
 
         playback: summary,
       });
+    }
+
+    lessonView =
+      await finalizeStaleSessionIfNeeded(
+        lessonView
+      );
+
+    if (lessonView.activeSession) {
+      throw new HttpError(
+        409,
+        "This lesson already has an active playback session."
+      );
     }
 
     const summary =
@@ -302,24 +355,6 @@ export const playbackHeartbeat =
       throw new HttpError(
         404,
         "Active playback session not found."
-      );
-    }
-
-    if (
-      isPlaybackSessionStale(
-        lessonView.activeSession
-      )
-    ) {
-      await finalizePlaybackSession({
-        lessonView,
-        sessionId:
-          req.params.sessionId,
-        status: "timeout",
-      });
-
-      throw new HttpError(
-        409,
-        "This playback session has expired."
       );
     }
 
@@ -470,18 +505,11 @@ export const getMyLessonView =
       );
     }
 
-    let lessonView =
+    const lessonView =
       await LessonView.findOne({
         student: req.user._id,
         lesson: lesson._id,
       });
-
-    if (lessonView) {
-      lessonView =
-        await finalizeStaleSessionIfNeeded(
-          lessonView
-        );
-    }
 
     res.status(200).json({
       success: true,

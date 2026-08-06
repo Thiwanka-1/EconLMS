@@ -19,7 +19,6 @@ import {
 } from "../utils/youtube.js";
 
 import {
-  finalizeStaleSessionIfNeeded,
   getLessonViewSummary,
 } from "../utils/playback.js";
 
@@ -334,17 +333,8 @@ export const getStudentLessonsByCourse =
         },
       });
 
-    const updatedViews =
-      await Promise.all(
-        existingViews.map((lessonView) =>
-          finalizeStaleSessionIfNeeded(
-            lessonView
-          )
-        )
-      );
-
     const viewMap = new Map(
-      updatedViews.map((lessonView) => [
+      existingViews.map((lessonView) => [
         lessonView.lesson.toString(),
         lessonView,
       ])

@@ -20,24 +20,69 @@ const getStorageKey = (
   )}`;
 };
 
-export const getStoredPlaybackSessionId =
+export const getStoredPlaybackSession =
   (lessonId) => {
     if (!lessonId) {
-      return "";
+      return {
+        sessionId: "",
+        watchedSeconds: 0,
+      };
     }
 
     try {
-      return (
+      const storedValue =
         getStorage()?.getItem(
           getStorageKey(
             lessonId
           )
-        ) || ""
-      );
+        ) || "";
+
+      if (!storedValue) {
+        return {
+          sessionId: "",
+          watchedSeconds: 0,
+        };
+      }
+
+      try {
+        const parsedValue =
+          JSON.parse(storedValue);
+
+        return {
+          sessionId:
+            typeof parsedValue?.sessionId ===
+            "string"
+              ? parsedValue.sessionId.trim()
+              : "",
+
+          watchedSeconds: Math.max(
+            Number(
+              parsedValue?.watchedSeconds
+            ) || 0,
+            0
+          ),
+        };
+      } catch {
+        // Older sessions stored only the raw ID.
+        return {
+          sessionId:
+            storedValue.trim(),
+          watchedSeconds: 0,
+        };
+      }
     } catch {
-      return "";
+      return {
+        sessionId: "",
+        watchedSeconds: 0,
+      };
     }
   };
+
+export const getStoredPlaybackSessionId =
+  (lessonId) =>
+    getStoredPlaybackSession(
+      lessonId
+    ).sessionId;
 
 export const setStoredPlaybackSessionId =
   (
@@ -51,18 +96,65 @@ export const setStoredPlaybackSessionId =
       return;
     }
 
-    try {
-      getStorage()?.setItem(
-        getStorageKey(
-          lessonId
-        ),
-        String(sessionId)
+    const storedSession =
+      getStoredPlaybackSession(
+        lessonId
       );
-    } catch {
-      // Playback still works without
-      // browser session storage.
-    }
+
+    setStoredPlaybackProgress({
+      lessonId,
+      sessionId,
+      watchedSeconds:
+        storedSession.sessionId ===
+        String(sessionId)
+          ? storedSession.watchedSeconds
+          : 0,
+    });
   };
+
+export const setStoredPlaybackProgress = ({
+  lessonId,
+  sessionId,
+  watchedSeconds,
+}) => {
+  if (!lessonId || !sessionId) {
+    return;
+  }
+
+  try {
+    const storedSession =
+      getStoredPlaybackSession(
+        lessonId
+      );
+
+    const nextWatchedSeconds =
+      storedSession.sessionId ===
+      String(sessionId)
+        ? Math.max(
+            storedSession.watchedSeconds,
+            Number(watchedSeconds) || 0
+          )
+        : Math.max(
+            Number(watchedSeconds) || 0,
+            0
+          );
+
+    getStorage()?.setItem(
+      getStorageKey(
+        lessonId
+      ),
+      JSON.stringify({
+        sessionId:
+          String(sessionId),
+        watchedSeconds:
+          nextWatchedSeconds,
+      })
+    );
+  } catch {
+    // Playback still works without
+    // browser session storage.
+  }
+};
 
 export const clearStoredPlaybackSessionId =
   (lessonId) => {
