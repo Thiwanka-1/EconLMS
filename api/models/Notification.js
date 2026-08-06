@@ -16,7 +16,7 @@ const emailDeliverySchema =
 
       provider: {
         type: String,
-        default: "resend",
+        default: "smtp",
       },
 
       providerMessageId: {
@@ -63,6 +63,8 @@ const notificationSchema =
           "nic_verified",
           "nic_rejected",
           "nic_submitted",
+          "student_registered",
+          "payment_reminder",
           "system",
         ],
         required: true,
@@ -124,7 +126,7 @@ const notificationSchema =
         type: emailDeliverySchema,
         default: () => ({
           status: "pending",
-          provider: "resend",
+          provider: "smtp",
         }),
       },
     },

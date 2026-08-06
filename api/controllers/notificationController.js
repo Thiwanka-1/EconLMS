@@ -9,6 +9,8 @@ const notificationTypes = new Set([
   "nic_verified",
   "nic_rejected",
   "nic_submitted",
+  "student_registered",
+  "payment_reminder",
   "system",
 ]);
 

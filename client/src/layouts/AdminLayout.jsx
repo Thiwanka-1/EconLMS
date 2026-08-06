@@ -28,7 +28,7 @@ export default function AdminLayout() {
         },
         {
           to: "/admin/students",
-          label: "Students",
+          label: "Users",
         },
         {
           to: "/admin/notifications",

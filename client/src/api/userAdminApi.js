@@ -34,6 +34,25 @@ export const getAdminUser = (
   );
 };
 
+export const createAdminUser = ({
+  firstName,
+  lastName,
+  email,
+  password,
+  confirmPassword,
+}) => {
+  return apiRequest("/users/admin", {
+    method: "POST",
+    body: {
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+    },
+  });
+};
+
 export const setAdminUserStatus = (
   userId,
   isActive

@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  createAdminUser,
   deleteUser,
   getAllUsers,
   getUserById,
@@ -17,6 +18,12 @@ const router = express.Router();
 router.use(protect);
 
 router.get("/", authorize("admin"), getAllUsers);
+
+router.post(
+  "/admin",
+  authorize("admin"),
+  createAdminUser
+);
 
 router.get("/:id", validateObjectId, getUserById);
 router.patch("/:id", validateObjectId, updateUser);

@@ -16,8 +16,9 @@ Before creating the Render Blueprint, have these ready:
    string. Add Render's Singapore outbound IP ranges to the Atlas IP access
    list. For a short private test, `0.0.0.0/0` is simpler but less restrictive;
    use a strong database password and restrict the list afterward.
-2. A Resend API key and a verified sending domain. `EMAIL_FROM` must use that
-   verified domain, for example `EconLLS <noreply@example.com>`.
+2. SMTP credentials. For Gmail, enable 2-Step Verification and create an App
+   Password. Set `EMAIL_FROM` to the same Gmail address, for example
+   `EconLLS <account@gmail.com>`.
 3. Google OAuth credentials, refresh token, and the two Drive root-folder IDs.
 4. Zoom Server-to-Server OAuth credentials.
 5. A 64-character hexadecimal Zoom-link encryption key. Generate one locally:
@@ -65,7 +66,8 @@ The secret values are:
 
 ```text
 MONGODB_URI
-RESEND_API_KEY
+SMTP_USER
+SMTP_PASS
 EMAIL_FROM
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET

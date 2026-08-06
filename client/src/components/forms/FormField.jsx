@@ -28,11 +28,11 @@
     minLength,
     inputMode,
     className:
-      "w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500",
+      "w-full min-w-0 max-w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500",
   };
 
   return (
-    <div>
+    <div className="min-w-0">
       <label
         htmlFor={id}
         className="mb-2 block text-sm font-bold text-slate-800"

@@ -127,7 +127,7 @@ export default function AppShell({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link
@@ -219,7 +219,7 @@ export default function AppShell({
 
       <MaintenanceBanner />
 
-      <main className="flex-1">
+      <main className="min-w-0 flex-1 overflow-x-hidden">
         <Outlet />
       </main>
 

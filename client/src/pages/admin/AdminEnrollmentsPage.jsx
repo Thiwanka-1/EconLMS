@@ -240,7 +240,7 @@ export default function AdminEnrollmentsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto min-w-0 max-w-7xl overflow-x-hidden px-4 py-10 sm:px-6 lg:px-8">
       <AdminPageHeader
         eyebrow="Access administration"
         title="Course enrolments"
@@ -281,7 +281,7 @@ export default function AdminEnrollmentsPage() {
             ...filters,
           });
         }}
-        className="mt-8 grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_200px_auto]"
+        className="mt-8 grid min-w-0 gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[minmax(0,1fr)_200px_auto]"
       >
         <select
           value={filters.courseId}
@@ -295,7 +295,7 @@ export default function AdminEnrollmentsPage() {
               })
             )
           }
-          className="rounded-2xl border border-slate-300 bg-white px-4 py-3"
+          className="w-full min-w-0 max-w-full rounded-2xl border border-slate-300 bg-white px-4 py-3"
         >
           <option value="">
             All courses
@@ -326,7 +326,7 @@ export default function AdminEnrollmentsPage() {
               })
             )
           }
-          className="rounded-2xl border border-slate-300 bg-white px-4 py-3"
+          className="w-full min-w-0 max-w-full rounded-2xl border border-slate-300 bg-white px-4 py-3"
         >
           <option value="">
             All statuses
@@ -351,7 +351,7 @@ export default function AdminEnrollmentsPage() {
 
         <button
           type="submit"
-          className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white"
+          className="w-full rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white sm:w-auto"
         >
           Apply filters
         </button>

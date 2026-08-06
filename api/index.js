@@ -12,7 +12,9 @@ import asyncHandler from "./utils/asyncHandler.js";
 
 import {
   runBillingGenerationOnStartup,
+  runPaymentRemindersOnStartup,
   scheduleMonthlyBillingGeneration,
+  schedulePaymentReminders,
   shutdownScheduledJobs,
   triggerMonthlyBillingGenerationNow,
 } from "./utils/scheduledJobs.js";
@@ -39,6 +41,10 @@ import {
 import {
   validateEnvironment,
 } from "./utils/validateEnvironment.js";
+
+import {
+  verifyEmailConnection,
+} from "./utils/mailer.js";
 
 import {
   backfillPendingAdminNotifications,
@@ -312,6 +318,7 @@ app.use(errorHandler);
 
 let server = null;
 let monthlyBillingJob = null;
+let paymentReminderJob = null;
 
 const startServer = async () => {
   try {
@@ -360,6 +367,23 @@ const startServer = async () => {
       );
     }
 
+    try {
+      paymentReminderJob =
+        schedulePaymentReminders();
+
+      void runPaymentRemindersOnStartup().catch((error) => {
+        console.error(
+          "[PAYMENT_REMINDER] Startup catch-up failed:",
+          error.message,
+        );
+      });
+    } catch (error) {
+      console.error(
+        "[PAYMENT_REMINDER] Initialization failed:",
+        error.message,
+      );
+    }
+
     server = app.listen(
       port,
       () => {
@@ -368,6 +392,18 @@ const startServer = async () => {
         );
       }
     );
+
+    void verifyEmailConnection()
+      .then(() => {
+        console.log("[EMAIL] SMTP connection verified.");
+      })
+      .catch((error) => {
+        // In-app notifications and the API remain available during mail outages.
+        console.error(
+          "[EMAIL] SMTP connection verification failed:",
+          error.message,
+        );
+      });
 
     /*
      * These properties must be assigned only

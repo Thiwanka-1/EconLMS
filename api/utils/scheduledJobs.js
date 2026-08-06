@@ -5,6 +5,10 @@ import {
   getOrCreateCurrentBillingPeriod,
 } from "./billingPeriod.js";
 
+import {
+  sendDuePaymentReminders,
+} from "../services/paymentReminderService.js";
+
 const getApplicationTimezone = () => {
   return process.env.APP_TIMEZONE || "Asia/Colombo";
 };
@@ -215,6 +219,53 @@ export const runBillingGenerationOnStartup =
       source: "startup",
     });
   };
+
+export const schedulePaymentReminders = () => {
+  const timezone = getApplicationTimezone();
+  const configuredHour = Number.parseInt(
+    process.env.PAYMENT_REMINDER_HOUR || "9",
+    10,
+  );
+  const hour = Number.isInteger(configuredHour) &&
+    configuredHour >= 0 && configuredHour <= 23
+    ? configuredHour
+    : 9;
+
+  const rule = new schedule.RecurrenceRule();
+  rule.tz = timezone;
+  rule.hour = hour;
+  rule.minute = 0;
+  rule.second = 0;
+
+  const job = schedule.scheduleJob(rule, async () => {
+    try {
+      await sendDuePaymentReminders({
+        source: "scheduled",
+      });
+    } catch (error) {
+      console.error(
+        "[PAYMENT_REMINDER] Scheduled job failed:",
+        error.message,
+      );
+    }
+  });
+
+  if (!job) {
+    throw new Error("Payment reminder job could not be scheduled.");
+  }
+
+  console.log(
+    `[PAYMENT_REMINDER] Scheduled daily at ${String(hour).padStart(2, "0")}:00 in ${timezone}.`,
+  );
+
+  return job;
+};
+
+export const runPaymentRemindersOnStartup = async () => {
+  return sendDuePaymentReminders({
+    source: "startup",
+  });
+};
 
 export const shutdownScheduledJobs = async () => {
   await schedule.gracefulShutdown();

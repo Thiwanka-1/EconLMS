@@ -49,10 +49,18 @@ services:
         value: "60"
 
       - key: EMAIL_PROVIDER
-        value: resend
+        value: smtp
       - key: EMAIL_NOTIFICATIONS_ENABLED
         value: "true"
-      - key: RESEND_API_KEY
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_SECURE
+        value: "true"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
         sync: false
       - key: EMAIL_FROM
         sync: false
@@ -103,6 +111,10 @@ services:
         value: "20"
       - key: BILLING_CRON_TEST_MODE
         value: "false"
+      - key: PAYMENT_REMINDER_DAYS_BEFORE
+        value: "6,3"
+      - key: PAYMENT_REMINDER_HOUR
+        value: "9"
 
   - type: web
     name: econlls-client

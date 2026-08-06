@@ -20,7 +20,7 @@ export default function PasswordField({
   ] = useState(false);
 
   return (
-    <div>
+    <div className="min-w-0">
       <label
         htmlFor={id}
         className="mb-2 block text-sm font-bold text-slate-800"
@@ -37,7 +37,7 @@ export default function PasswordField({
         )}
       </label>
 
-      <div className="relative">
+      <div className="relative min-w-0">
         <input
           id={id}
           name={id}
@@ -53,7 +53,7 @@ export default function PasswordField({
           required={required}
           minLength={minLength}
           disabled={disabled}
-          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 pr-20 text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+          className="w-full min-w-0 max-w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 pr-20 text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
 
         <button

@@ -9,6 +9,7 @@ import {
 } from "react-router";
 
 import {
+  createAdminUser,
   getAdminUsers,
   setAdminUserStatus,
 } from "../../api/userAdminApi.js";
@@ -18,6 +19,16 @@ import EmptyState from "../../components/common/EmptyState.jsx";
 import Pagination from "../../components/common/Pagination.jsx";
 import StatusBadge from "../../components/common/StatusBadge.jsx";
 import StatusMessage from "../../components/common/StatusMessage.jsx";
+import FormField from "../../components/forms/FormField.jsx";
+import PasswordField from "../../components/forms/PasswordField.jsx";
+
+const emptyAdminForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+};
 
 export default function AdminStudentsPage() {
   const [students, setStudents] =
@@ -52,6 +63,15 @@ export default function AdminStudentsPage() {
   const [isLoading, setIsLoading] =
     useState(true);
 
+  const [accountRole, setAccountRole] =
+    useState("student");
+
+  const [showAdminForm, setShowAdminForm] =
+    useState(false);
+
+  const [adminForm, setAdminForm] =
+    useState(emptyAdminForm);
+
   const loadStudents =
     useCallback(
       async (page = 1) => {
@@ -64,7 +84,7 @@ export default function AdminStudentsPage() {
               ...appliedFilters,
               page,
               limit: 20,
-              role: "student",
+              role: accountRole,
             });
 
           setStudents(
@@ -86,7 +106,7 @@ export default function AdminStudentsPage() {
           setIsLoading(false);
         }
       },
-      [appliedFilters]
+      [accountRole, appliedFilters]
     );
 
   useEffect(() => {
@@ -108,7 +128,7 @@ export default function AdminStudentsPage() {
 
         setSuccess(
           result.message ||
-            "Student status updated."
+            "Account status updated."
         );
 
         await loadStudents(
@@ -117,19 +137,64 @@ export default function AdminStudentsPage() {
       } catch (requestError) {
         setError(
           requestError.message ||
-            "Student status could not be updated."
+            "Account status could not be updated."
         );
       } finally {
         setBusyId("");
       }
     };
 
+  const handleAdminFormChange = (event) => {
+    const { name, value } = event.target;
+
+    setAdminForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const submitAdmin = async (event) => {
+    event.preventDefault();
+    setBusyId("create-admin");
+    setError("");
+    setSuccess("");
+
+    try {
+      const result = await createAdminUser(adminForm);
+
+      setSuccess(result.message || "Administrator account created.");
+      setAdminForm(emptyAdminForm);
+      setShowAdminForm(false);
+
+      if (accountRole === "admin") {
+        await loadStudents(1);
+      } else {
+        setAccountRole("admin");
+      }
+    } catch (requestError) {
+      setError(
+        requestError.message || "Administrator account could not be created.",
+      );
+    } finally {
+      setBusyId("");
+    }
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <AdminPageHeader
-        eyebrow="Student administration"
-        title="Students"
-        description="Search student accounts, review verification status and manage account access."
+        eyebrow="Account administration"
+        title="Users and administrators"
+        description="Search accounts, review students and securely create additional administrators."
+        action={
+          <button
+            type="button"
+            onClick={() => setShowAdminForm((current) => !current)}
+            className="rounded-2xl bg-brand-600 px-5 py-3 text-sm font-black text-white"
+          >
+            {showAdminForm ? "Close form" : "Create administrator"}
+          </button>
+        }
       />
 
       <div className="mt-7 space-y-4">
@@ -146,6 +211,98 @@ export default function AdminStudentsPage() {
         )}
       </div>
 
+      {showAdminForm && (
+        <form
+          onSubmit={submitAdmin}
+          className="mt-8 rounded-3xl border border-brand-200 bg-white p-5 shadow-sm sm:p-7"
+        >
+          <h2 className="text-xl font-black text-slate-950">
+            New administrator
+          </h2>
+
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            This account is verified immediately. Share the temporary password
+            securely and ask the administrator to change it after login.
+          </p>
+
+          <div className="mt-6 grid min-w-0 gap-5 sm:grid-cols-2">
+            <FormField
+              id="firstName"
+              label="First name"
+              value={adminForm.firstName}
+              onChange={handleAdminFormChange}
+              required
+              disabled={busyId === "create-admin"}
+            />
+            <FormField
+              id="lastName"
+              label="Last name"
+              value={adminForm.lastName}
+              onChange={handleAdminFormChange}
+              required
+              disabled={busyId === "create-admin"}
+            />
+            <div className="sm:col-span-2">
+              <FormField
+                id="email"
+                label="Email address"
+                type="email"
+                value={adminForm.email}
+                onChange={handleAdminFormChange}
+                autoComplete="email"
+                required
+                disabled={busyId === "create-admin"}
+              />
+            </div>
+            <PasswordField
+              id="password"
+              label="Temporary password"
+              value={adminForm.password}
+              onChange={handleAdminFormChange}
+              autoComplete="new-password"
+              disabled={busyId === "create-admin"}
+            />
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm password"
+              value={adminForm.confirmPassword}
+              onChange={handleAdminFormChange}
+              autoComplete="new-password"
+              disabled={busyId === "create-admin"}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={busyId === "create-admin"}
+            className="mt-6 w-full rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white disabled:opacity-50 sm:w-auto"
+          >
+            {busyId === "create-admin" ? "Creating…" : "Create administrator"}
+          </button>
+        </form>
+      )}
+
+      <div className="mt-8 flex flex-wrap gap-2">
+        {[
+          ["student", "Students"],
+          ["admin", "Administrators"],
+        ].map(([role, label]) => (
+          <button
+            key={role}
+            type="button"
+            onClick={() => setAccountRole(role)}
+            className={[
+              "rounded-xl px-4 py-2.5 text-sm font-black",
+              accountRole === role
+                ? "bg-slate-950 text-white"
+                : "border border-slate-300 bg-white text-slate-700",
+            ].join(" ")}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -154,7 +311,7 @@ export default function AdminStudentsPage() {
             ...filters,
           });
         }}
-        className="mt-8 grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_180px_auto]"
+        className="mt-8 grid min-w-0 gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[minmax(0,1fr)_180px_auto]"
       >
         <input
           type="search"
@@ -169,8 +326,12 @@ export default function AdminStudentsPage() {
               })
             )
           }
-          placeholder="Search name, email, NIC, phone or school"
-          className="rounded-2xl border border-slate-300 px-4 py-3"
+          placeholder={
+            accountRole === "student"
+              ? "Search name, email, NIC, phone or school"
+              : "Search administrator name or email"
+          }
+          className="min-w-0 rounded-2xl border border-slate-300 px-4 py-3"
         />
 
         <select
@@ -185,7 +346,7 @@ export default function AdminStudentsPage() {
               })
             )
           }
-          className="rounded-2xl border border-slate-300 px-4 py-3"
+          className="min-w-0 rounded-2xl border border-slate-300 px-4 py-3"
         >
           <option value="">
             All accounts
@@ -222,8 +383,8 @@ export default function AdminStudentsPage() {
       ) : students.length === 0 ? (
         <div className="mt-7">
           <EmptyState
-            title="No students found"
-            description="No student accounts match the selected filters."
+            title={`No ${accountRole === "student" ? "students" : "administrators"} found`}
+            description="No accounts match the selected filters."
           />
         </div>
       ) : (
@@ -250,19 +411,14 @@ export default function AdminStudentsPage() {
                         }
                       />
 
-                      <StatusBadge
-                        status={
-                          student.nicVerificationStatus ||
-                          "not_uploaded"
-                        }
-                        label={`NIC: ${String(
-                          student.nicVerificationStatus ||
-                            "not uploaded"
-                        ).replace(
-                          /_/g,
-                          " "
-                        )}`}
-                      />
+                      {accountRole === "student" && (
+                        <StatusBadge
+                          status={student.nicVerificationStatus || "not_uploaded"}
+                          label={`NIC: ${String(
+                            student.nicVerificationStatus || "not uploaded"
+                          ).replace(/_/g, " ")}`}
+                        />
+                      )}
                     </div>
 
                     <h2 className="mt-4 text-xl font-black text-slate-950">
@@ -274,23 +430,23 @@ export default function AdminStudentsPage() {
                       {student.email}
                     </p>
 
-                    <p className="mt-2 text-sm text-slate-600">
-                      NIC:{" "}
-                      {student.nicNumber ||
-                        "—"}{" "}
-                      · School:{" "}
-                      {student.school ||
-                        "—"}
-                    </p>
+                    {accountRole === "student" && (
+                      <p className="mt-2 text-sm text-slate-600">
+                        NIC: {student.nicNumber || "—"} · School:{" "}
+                        {student.school || "—"}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <Link
-                      to={`/admin/students/${student._id}`}
-                      className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-black text-white"
-                    >
-                      Review student
-                    </Link>
+                    {accountRole === "student" && (
+                      <Link
+                        to={`/admin/students/${student._id}`}
+                        className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-black text-white"
+                      >
+                        Review student
+                      </Link>
+                    )}
 
                     <button
                       type="button"

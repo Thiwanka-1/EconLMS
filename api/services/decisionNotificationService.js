@@ -90,9 +90,7 @@ export const processPaymentDecisionSideEffects =
         null;
 
       const actionUrl =
-        payment.course?._id
-          ? `/student/courses/${payment.course._id}`
-          : "/student/courses";
+        "/student/payments";
 
       const notificationType =
         approved
@@ -273,7 +271,7 @@ export const processNicDecisionSideEffects =
         decision === "verified";
 
       const actionUrl =
-        "/student/profile";
+        "/student/nic";
 
       const notificationType =
         verified

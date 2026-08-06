@@ -23,6 +23,10 @@ import {
   getPlatformSettings,
 } from "../utils/platformSettings.js";
 
+import {
+  notifyAdminsOfStudentRegistration,
+} from "../services/adminNotificationService.js";
+
 const requiredStudentFields = [
   "firstName",
   "lastName",
@@ -292,6 +296,17 @@ export const verifyEmail = asyncHandler(
     user.lastLoginAt = new Date();
 
     await user.save();
+
+    try {
+      await notifyAdminsOfStudentRegistration({
+        student: user,
+      });
+    } catch (notificationError) {
+      console.error(
+        "[ADMIN_NOTIFICATION] Student registration alert failed:",
+        notificationError.message,
+      );
+    }
 
     const token = generateAuthToken(user);
     setAuthCookie(res, token);

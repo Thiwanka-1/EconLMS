@@ -58,6 +58,14 @@ const notificationTypes = [
     label: "NIC submitted",
   },
   {
+    value: "student_registered",
+    label: "Student registered",
+  },
+  {
+    value: "payment_reminder",
+    label: "Payment reminder",
+  },
+  {
     value: "system",
     label: "System",
   },
@@ -85,6 +93,48 @@ const getTypeLabel = (
       (character) =>
         character.toUpperCase()
     );
+};
+
+const getNotificationActionUrl = ({ notification, role }) => {
+  const type = notification?.type;
+
+  if (role === "student") {
+    if (["nic_verified", "nic_rejected", "nic_submitted"].includes(type)) {
+      return "/student/nic";
+    }
+
+    if (
+      [
+        "payment_approved",
+        "payment_rejected",
+        "payment_submitted",
+        "payment_reminder",
+      ].includes(type)
+    ) {
+      return "/student/payments";
+    }
+  }
+
+  if (role === "admin") {
+    if (type === "payment_submitted") {
+      return isSafeInternalPath(notification?.actionUrl) &&
+        notification.actionUrl.startsWith("/admin/payments")
+        ? notification.actionUrl
+        : "/admin/payments";
+    }
+
+    if (["nic_submitted", "student_registered"].includes(type)) {
+      const studentId = notification?.data?.studentId;
+
+      return studentId
+        ? `/admin/students/${encodeURIComponent(studentId)}`
+        : "/admin/students";
+    }
+  }
+
+  return isSafeInternalPath(notification?.actionUrl)
+    ? notification.actionUrl
+    : "";
 };
 
 export default function NotificationsPage() {
@@ -244,14 +294,13 @@ export default function NotificationsPage() {
         return;
       }
 
-      if (
-        isSafeInternalPath(
-          updated.actionUrl
-        )
-      ) {
-        navigate(
-          updated.actionUrl
-        );
+      const destination = getNotificationActionUrl({
+        notification: updated,
+        role: user?.role,
+      });
+
+      if (destination) {
+        navigate(destination);
       }
     };
 
@@ -421,8 +470,11 @@ export default function NotificationsPage() {
           {notifications.map(
             (notification) => {
               const hasAction =
-                isSafeInternalPath(
-                  notification.actionUrl
+                Boolean(
+                  getNotificationActionUrl({
+                    notification,
+                    role: user?.role,
+                  })
                 );
 
               return (

@@ -44,21 +44,21 @@ export const createUserNotification =
     }
 
     const emailNotificationsEnabled =
-    process.env.EMAIL_NOTIFICATIONS_ENABLED !== "false";
+      process.env.EMAIL_NOTIFICATIONS_ENABLED !== "false";
 
-  const shouldAttemptEmail = Boolean(
-    emailNotificationsEnabled &&
-    emailTemplate &&
-    recipient.email
-  );
+    const shouldAttemptEmail = Boolean(
+      emailNotificationsEnabled &&
+      emailTemplate &&
+      recipient.email
+    );
 
-  const skippedEmailReason = !emailNotificationsEnabled
-    ? "Email notifications are disabled."
-    : !emailTemplate
-      ? "Email template is missing."
-      : !recipient.email
-        ? "Recipient email is missing."
-        : "";
+    const skippedEmailReason = !emailNotificationsEnabled
+      ? "Email notifications are disabled."
+      : !emailTemplate
+        ? "Email template is missing."
+        : !recipient.email
+          ? "Recipient email is missing."
+          : "";
 
     /*
      * Atomic upsert prevents duplicate in-app
@@ -86,7 +86,7 @@ export const createUserNotification =
                 ? "pending"
                 : "skipped",
 
-              provider: "resend",
+              provider: "smtp",
 
               error: shouldAttemptEmail ? "" : skippedEmailReason,
             },
@@ -128,13 +128,6 @@ export const createUserNotification =
 
           html:
             emailTemplate.html,
-
-          /*
-           * Resend uses this to protect against
-           * duplicate sends during retries.
-           */
-          idempotencyKey:
-            deduplicationKey,
         });
 
       if (result.skipped) {
@@ -169,7 +162,7 @@ export const createUserNotification =
 
             "emailDelivery.provider":
               result.provider ||
-              "resend",
+              "smtp",
 
             "emailDelivery.providerMessageId":
               result.messageId,

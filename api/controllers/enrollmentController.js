@@ -18,6 +18,10 @@ import {
   notifyAdminsOfPaymentSubmission,
 } from "../services/adminNotificationService.js";
 
+import {
+  notifyStudentOfPaymentSubmission,
+} from "../services/studentNotificationService.js";
+
 const getOrCreateEnrollment = async ({
   student,
   course,
@@ -263,19 +267,29 @@ export const submitPaymentSlip =
           status: "pending",
         });
 
-      try {
-        await notifyAdminsOfPaymentSubmission({
+      const notificationResults = await Promise.allSettled([
+        notifyAdminsOfPaymentSubmission({
           paymentSubmission,
           student: req.user,
           course,
           billingPeriod,
-        });
-      } catch (notificationError) {
-        // A completed upload must not be rolled back if an alert fails.
-        console.error(
-          "[ADMIN_NOTIFICATION] Payment submission alert failed:",
-          notificationError.message,
-        );
+        }),
+        notifyStudentOfPaymentSubmission({
+          paymentSubmission,
+          student: req.user,
+          course,
+          billingPeriod,
+        }),
+      ]);
+
+      for (const notificationResult of notificationResults) {
+        if (notificationResult.status === "rejected") {
+          // A completed upload must not be rolled back if an alert fails.
+          console.error(
+            "[NOTIFICATION] Payment submission alert failed:",
+            notificationResult.reason?.message || notificationResult.reason,
+          );
+        }
       }
 
       res.status(201).json({

@@ -457,7 +457,7 @@ export default function AdminLiveClassesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto min-w-0 max-w-7xl overflow-x-hidden px-4 py-10 sm:px-6 lg:px-8">
       <AdminPageHeader
         eyebrow="Live-class administration"
         title="Zoom live classes"
@@ -478,7 +478,7 @@ export default function AdminLiveClassesPage() {
         )}
       </div>
 
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="mt-8 min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <h2 className="text-xl font-black text-slate-950">
           Connect a Zoom meeting
         </h2>
@@ -494,8 +494,8 @@ export default function AdminLiveClassesPage() {
           onSubmit={handleCreate}
           className="mt-7"
         >
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
+          <div className="grid min-w-0 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="min-w-0">
               <label
                 htmlFor="courseId"
                 className="mb-2 block text-sm font-bold text-slate-800"
@@ -514,7 +514,7 @@ export default function AdminLiveClassesPage() {
                 disabled={
                   busyKey === "create"
                 }
-                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-slate-950"
+                className="w-full min-w-0 max-w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-slate-950"
               >
                 <option value="">
                   Select course
@@ -537,7 +537,7 @@ export default function AdminLiveClassesPage() {
             {selectedCourse
               ?.paymentPlan ===
               "monthly" && (
-              <div>
+              <div className="min-w-0">
                 <label
                   htmlFor="billingPeriodId"
                   className="mb-2 block text-sm font-bold text-slate-800"
@@ -559,7 +559,7 @@ export default function AdminLiveClassesPage() {
                     isLoadingPeriods ||
                     busyKey === "create"
                   }
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-slate-950 disabled:opacity-50"
+                  className="w-full min-w-0 max-w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-slate-950 disabled:opacity-50"
                 >
                   <option value="">
                     {isLoadingPeriods
@@ -708,7 +708,7 @@ export default function AdminLiveClassesPage() {
             ...filters,
           });
         }}
-        className="mt-8 grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_190px_auto]"
+        className="mt-8 grid min-w-0 gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[minmax(0,1fr)_190px_auto]"
       >
         <select
           name="courseId"
@@ -716,7 +716,7 @@ export default function AdminLiveClassesPage() {
           onChange={
             handleFilterChange
           }
-          className="rounded-2xl border border-slate-300 bg-white px-4 py-3"
+          className="w-full min-w-0 max-w-full rounded-2xl border border-slate-300 bg-white px-4 py-3"
         >
           <option value="">
             All courses
@@ -741,7 +741,7 @@ export default function AdminLiveClassesPage() {
           onChange={
             handleFilterChange
           }
-          className="rounded-2xl border border-slate-300 bg-white px-4 py-3"
+          className="w-full min-w-0 max-w-full rounded-2xl border border-slate-300 bg-white px-4 py-3"
         >
           <option value="">
             All statuses
@@ -762,7 +762,7 @@ export default function AdminLiveClassesPage() {
 
         <button
           type="submit"
-          className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white"
+          className="w-full rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white sm:w-auto"
         >
           Apply filters
         </button>

@@ -5,13 +5,13 @@ export default function AdminPageHeader({
   action,
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-6">
-      <div>
+    <div className="flex min-w-0 flex-wrap items-start justify-between gap-6">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-black uppercase tracking-[0.17em] text-brand-700">
           {eyebrow}
         </p>
 
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+        <h1 className="mt-2 break-words text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
           {title}
         </h1>
 

@@ -17,6 +17,10 @@ import {
   notifyAdminsOfNicSubmission,
 } from "../services/adminNotificationService.js";
 
+import {
+  notifyStudentOfNicSubmission,
+} from "../services/studentNotificationService.js";
+
 
 
 const getStudentWithNicFile =
@@ -218,16 +222,19 @@ export const uploadMyNicImage =
       }
     }
 
-    try {
-      await notifyAdminsOfNicSubmission({
-        student,
-      });
-    } catch (notificationError) {
-      // The uploaded NIC must remain valid even if an alert fails.
-      console.error(
-        "[ADMIN_NOTIFICATION] NIC submission alert failed:",
-        notificationError.message,
-      );
+    const notificationResults = await Promise.allSettled([
+      notifyAdminsOfNicSubmission({ student }),
+      notifyStudentOfNicSubmission({ student }),
+    ]);
+
+    for (const notificationResult of notificationResults) {
+      if (notificationResult.status === "rejected") {
+        // The uploaded NIC must remain valid even if an alert fails.
+        console.error(
+          "[NOTIFICATION] NIC submission alert failed:",
+          notificationResult.reason?.message || notificationResult.reason,
+        );
+      }
     }
 
     res.status(200).json({

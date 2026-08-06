@@ -241,7 +241,7 @@ export const createPaymentApprovedEmail = ({
     `,
 
     actionUrl,
-    actionText: "Open course",
+    actionText: "View payment and access",
   });
 
   return {
@@ -326,6 +326,121 @@ export const createPaymentRejectedEmail = ({
   };
 };
 
+export const createPaymentReminderEmail = ({
+  student,
+  courseTitle,
+  periodLabel,
+  deadlineLabel,
+  daysRemaining,
+  actionUrl,
+}) => {
+  const studentName = getStudentName(student);
+  const timing =
+    Number(daysRemaining) === 1
+      ? "tomorrow"
+      : `in ${daysRemaining} days`;
+  const subject = `EconLLS payment reminder: ${courseTitle}`;
+
+  const text = [
+    `Hello ${studentName},`,
+    "",
+    `Your payment for ${courseTitle} (${periodLabel}) is due ${timing}.`,
+    `Deadline: ${deadlineLabel}`,
+    "",
+    "Please upload your payment slip before the deadline to avoid interrupted access.",
+  ].join("\n");
+
+  const html = createEmailLayout({
+    previewText: `Your EconLLS payment is due ${timing}.`,
+    heading: "Upcoming payment deadline",
+    bodyHtml: `
+      <p>Hello ${escapeHtml(studentName)},</p>
+      <p>
+        Your payment for
+        <strong>${escapeHtml(courseTitle)}</strong>
+        (${escapeHtml(periodLabel)}) is due ${escapeHtml(timing)}.
+      </p>
+      <p>
+        <strong>Deadline:</strong>
+        ${escapeHtml(deadlineLabel)}
+      </p>
+      <p>
+        Please upload your payment slip before the deadline to avoid interrupted access.
+      </p>
+    `,
+    actionUrl,
+    actionText: "Open payments",
+  });
+
+  return {
+    subject,
+    text,
+    html,
+  };
+};
+
+export const createPaymentSubmittedEmail = ({
+  student,
+  courseTitle,
+  periodLabel,
+  actionUrl,
+}) => {
+  const studentName = getStudentName(student);
+  const target = periodLabel
+    ? `${courseTitle} — ${periodLabel}`
+    : courseTitle;
+  const subject = "EconLLS payment slip received";
+  const text = [
+    `Hello ${studentName},`,
+    "",
+    `We received your payment slip for ${target}.`,
+    "An administrator will review it and notify you of the decision.",
+  ].join("\n");
+
+  return {
+    subject,
+    text,
+    html: createEmailLayout({
+      previewText: "Your payment slip was received.",
+      heading: "Payment slip received",
+      bodyHtml: `
+        <p>Hello ${escapeHtml(studentName)},</p>
+        <p>We received your payment slip for <strong>${escapeHtml(target)}</strong>.</p>
+        <p>An administrator will review it and notify you of the decision.</p>
+      `,
+      actionUrl,
+      actionText: "View payments",
+    }),
+  };
+};
+
+export const createNicSubmittedEmail = ({ student, actionUrl }) => {
+  const studentName = getStudentName(student);
+  const subject = "EconLLS NIC image received";
+  const text = [
+    `Hello ${studentName},`,
+    "",
+    "We received your NIC image.",
+    "An administrator will review it and notify you of the decision.",
+  ].join("\n");
+
+  return {
+    subject,
+    text,
+    html: createEmailLayout({
+      previewText: "Your NIC image was received.",
+      heading: "NIC image received",
+      bodyHtml: `
+        <p>Hello ${escapeHtml(studentName)},</p>
+        <p>We received your NIC image.</p>
+        <p>An administrator will review it and notify you of the decision.</p>
+      `,
+      actionUrl,
+      actionText: "View NIC status",
+    }),
+  };
+};
+
 export const createNicVerifiedEmail = ({
   student,
   actionUrl,
@@ -366,7 +481,7 @@ export const createNicVerifiedEmail = ({
     `,
 
     actionUrl,
-    actionText: "View profile",
+    actionText: "View NIC status",
   });
 
   return {

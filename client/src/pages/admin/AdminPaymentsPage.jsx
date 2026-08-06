@@ -6,6 +6,10 @@ import {
 } from "react";
 
 import {
+  useSearchParams,
+} from "react-router";
+
+import {
   approveAdminPayment,
   getAdminPayment,
   getAdminPaymentFile,
@@ -14,6 +18,7 @@ import {
 } from "../../api/paymentAdminApi.js";
 
 import AdminPageHeader from "../../components/common/AdminPageHeader.jsx";
+import DocumentPreviewModal from "../../components/common/DocumentPreviewModal.jsx";
 import EmptyState from "../../components/common/EmptyState.jsx";
 import Pagination from "../../components/common/Pagination.jsx";
 import StatusBadge from "../../components/common/StatusBadge.jsx";
@@ -26,6 +31,9 @@ import {
 } from "../../utils/formatters.js";
 
 export default function AdminPaymentsPage() {
+  const [searchParams, setSearchParams] =
+    useSearchParams();
+
   const [payments, setPayments] =
     useState([]);
 
@@ -71,7 +79,13 @@ export default function AdminPaymentsPage() {
   const [busyAction, setBusyAction] =
     useState("");
 
+  const [isPreviewOpen, setIsPreviewOpen] =
+    useState(false);
+
   const previewRef =
+    useRef("");
+
+  const requestedPaymentHandledRef =
     useRef("");
 
   const replacePreview =
@@ -156,7 +170,7 @@ export default function AdminPaymentsPage() {
   }, []);
 
   const openPayment =
-    async (paymentId) => {
+    useCallback(async (paymentId) => {
       setError("");
       setSuccess("");
       setReviewNote("");
@@ -195,12 +209,31 @@ export default function AdminPaymentsPage() {
       } finally {
         setIsLoadingDetail(false);
       }
-    };
+    }, [replacePreview]);
+
+  const requestedPaymentId =
+    searchParams.get("paymentId") || "";
+
+  useEffect(() => {
+    if (
+      requestedPaymentId &&
+      requestedPaymentHandledRef.current !== requestedPaymentId
+    ) {
+      requestedPaymentHandledRef.current = requestedPaymentId;
+      void openPayment(requestedPaymentId);
+    }
+  }, [
+    openPayment,
+    requestedPaymentId,
+  ]);
 
   const closePayment = () => {
+    setIsPreviewOpen(false);
     setSelectedPayment(null);
     setReviewNote("");
     replacePreview("");
+    requestedPaymentHandledRef.current = "";
+    setSearchParams({}, { replace: true });
   };
 
   const decidePayment =
@@ -564,6 +597,16 @@ export default function AdminPaymentsPage() {
                 )}
               </div>
 
+              {previewUrl && (
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewOpen(true)}
+                  className="mt-3 w-full rounded-xl border border-brand-300 bg-brand-50 px-4 py-3 text-sm font-black text-brand-700"
+                >
+                  Open full payment slip
+                </button>
+              )}
+
               {selectedPayment.status ===
                 "pending" && (
                 <div className="mt-7">
@@ -644,6 +687,13 @@ export default function AdminPaymentsPage() {
           )}
         </section>
       </div>
+      <DocumentPreviewModal
+        isOpen={isPreviewOpen}
+        url={previewUrl}
+        contentType={previewType}
+        title="Private payment slip"
+        onClose={() => setIsPreviewOpen(false)}
+      />
     </div>
   );
 }

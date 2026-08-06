@@ -4,6 +4,10 @@ import ZoomRegistration from "../models/ZoomRegistration.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
 
+import {
+  recordAuditLog,
+} from "../utils/auditLog.js";
+
 const escapeRegExp = (value) => {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
@@ -49,6 +53,65 @@ const normalizeEmail = (value) => {
 const normalizeNicNumber = (value) => {
   return String(value || "").trim().toUpperCase();
 };
+
+export const createAdminUser = asyncHandler(async (req, res) => {
+  const firstName = String(req.body?.firstName || "").trim();
+  const lastName = String(req.body?.lastName || "").trim();
+  const email = normalizeEmail(req.body?.email);
+  const password = req.body?.password;
+  const confirmPassword = req.body?.confirmPassword;
+
+  if (!firstName || !lastName || !email || !password || !confirmPassword) {
+    throw new HttpError(
+      400,
+      "First name, last name, email, password and confirmation are required."
+    );
+  }
+
+  if (password !== confirmPassword) {
+    throw new HttpError(400, "Password and confirmation do not match.");
+  }
+
+  if (typeof password !== "string" || password.length < 8) {
+    throw new HttpError(400, "Password must contain at least 8 characters.");
+  }
+
+  if (Buffer.byteLength(password, "utf8") > 72) {
+    throw new HttpError(400, "Password must not exceed 72 bytes.");
+  }
+
+  if (await User.exists({ email })) {
+    throw new HttpError(409, "An account with this email address already exists.");
+  }
+
+  const administrator = await User.create({
+    firstName,
+    lastName,
+    email,
+    password,
+    role: "admin",
+    isActive: true,
+    isEmailVerified: true,
+  });
+
+  await recordAuditLog({
+    req,
+    action: "ADMIN_CREATED",
+    entityType: "User",
+    entityId: administrator._id,
+    targetUserId: administrator._id,
+    description: `Administrator account created for ${email}.`,
+    metadata: {
+      createdAdminEmail: email,
+    },
+  });
+
+  res.status(201).json({
+    success: true,
+    message: "Administrator account created successfully.",
+    user: administrator,
+  });
+});
 
 const ensureAnotherActiveAdminExists = async (user) => {
   if (user.role !== "admin" || !user.isActive) {

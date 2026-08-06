@@ -1,29 +1,60 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-let resendClient = null;
-
-const getResendClient = () => {
-  const provider = String(process.env.EMAIL_PROVIDER || "resend").trim().toLowerCase();
-
-  if (provider !== "resend") {
-    throw new Error(`Unsupported email provider: ${provider}`);
-  }
-
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is missing.");
-  }
-
-  if (!resendClient) {
-    resendClient = new Resend(process.env.RESEND_API_KEY);
-  }
-
-  return resendClient;
-};
+let smtpTransporter = null;
 
 const normalizeRecipients = (to) => {
   const recipients = Array.isArray(to) ? to : [to];
 
-  return recipients.map((recipient) => String(recipient || "").trim()).filter(Boolean);
+  return recipients
+    .map((recipient) => String(recipient || "").trim())
+    .filter(Boolean);
+};
+
+const getSmtpPort = () => {
+  const port = Number.parseInt(process.env.SMTP_PORT || "587", 10);
+
+  return Number.isInteger(port) && port > 0 ? port : 587;
+};
+
+const getSmtpTransporter = () => {
+  const host = String(process.env.SMTP_HOST || "").trim();
+  const user = String(process.env.SMTP_USER || "").trim();
+  const pass = String(process.env.SMTP_PASS || "").trim();
+  const port = getSmtpPort();
+  const secure =
+    String(process.env.SMTP_SECURE || (port === 465 ? "true" : "false"))
+      .trim()
+      .toLowerCase() === "true";
+
+  if (!host || !user || !pass) {
+    throw new Error(
+      "SMTP configuration is incomplete. SMTP_HOST, SMTP_USER and SMTP_PASS are required.",
+    );
+  }
+
+  if (!smtpTransporter) {
+    smtpTransporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      requireTLS: !secure,
+      pool: true,
+      maxConnections: Math.max(
+        Number.parseInt(process.env.SMTP_MAX_CONNECTIONS || "3", 10) || 3,
+        1,
+      ),
+      maxMessages: Math.max(
+        Number.parseInt(process.env.SMTP_MAX_MESSAGES || "100", 10) || 100,
+        1,
+      ),
+      auth: {
+        user,
+        pass,
+      },
+    });
+  }
+
+  return smtpTransporter;
 };
 
 export const sendEmail = async ({ to, subject, text, html }) => {
@@ -46,7 +77,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
     throw new Error("Email text or HTML content is required.");
   }
 
-  const { data, error } = await getResendClient().emails.send({
+  const result = await getSmtpTransporter().sendMail({
     from,
     to: recipients,
     subject,
@@ -54,13 +85,17 @@ export const sendEmail = async ({ to, subject, text, html }) => {
     html,
   });
 
-  if (error) {
-    throw new Error(`Resend email delivery failed: ${error.message || "Unknown Resend error."}`);
+  if (!result?.messageId) {
+    throw new Error("SMTP server did not return an email identifier.");
   }
 
-  if (!data?.id) {
-    throw new Error("Resend did not return an email identifier.");
-  }
+  return {
+    id: result.messageId,
+    accepted: result.accepted || [],
+    rejected: result.rejected || [],
+  };
+};
 
-  return data;
+export const verifyEmailConnection = async () => {
+  return getSmtpTransporter().verify();
 };

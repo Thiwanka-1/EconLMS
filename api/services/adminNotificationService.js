@@ -99,7 +99,7 @@ export const notifyAdminsOfPaymentSubmission = async ({
     type: "payment_submitted",
     title: "Payment awaiting review",
     message: `${studentName} submitted a payment slip for ${courseTitle}${periodLabel}.`,
-    actionUrl: "/admin/payments",
+    actionUrl: `/admin/payments?paymentId=${paymentSubmission._id}`,
     data: {
       paymentId: paymentSubmission._id,
       studentId: student?._id || null,
@@ -130,6 +130,25 @@ export const notifyAdminsOfNicSubmission = async ({
       uploadedAt: student.nicImageUploadedAt || null,
     },
     deduplicationKey: `admin-nic-submitted/${student._id}/${uploadVersion}`,
+    administrators,
+  });
+};
+
+export const notifyAdminsOfStudentRegistration = async ({
+  student,
+  administrators = null,
+}) => {
+  const studentName = getStudentName(student);
+
+  return createNotificationsForActiveAdmins({
+    type: "student_registered",
+    title: "New student registration",
+    message: `${studentName} completed email verification and registered with EconLLS.`,
+    actionUrl: `/admin/students/${student._id}`,
+    data: {
+      studentId: student._id,
+    },
+    deduplicationKey: `admin-student-registered/${student._id}`,
     administrators,
   });
 };

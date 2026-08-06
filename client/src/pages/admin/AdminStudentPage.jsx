@@ -28,6 +28,7 @@ import {
 } from "../../api/userAdminApi.js";
 
 import AdminPageHeader from "../../components/common/AdminPageHeader.jsx";
+import DocumentPreviewModal from "../../components/common/DocumentPreviewModal.jsx";
 import EmptyState from "../../components/common/EmptyState.jsx";
 import StatusBadge from "../../components/common/StatusBadge.jsx";
 import StatusMessage from "../../components/common/StatusMessage.jsx";
@@ -55,6 +56,9 @@ export default function AdminStudentPage() {
 
   const [previewUrl, setPreviewUrl] =
     useState("");
+
+  const [isPreviewOpen, setIsPreviewOpen] =
+    useState(false);
 
   const [nicNote, setNicNote] =
     useState("");
@@ -557,17 +561,34 @@ export default function AdminStudentPage() {
 
           <div className="mt-6 flex min-h-80 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
             {previewUrl ? (
-              <img
-                src={previewUrl}
-                alt="Private student NIC"
-                className="max-h-[34rem] w-full object-contain"
-              />
+              <button
+                type="button"
+                onClick={() => setIsPreviewOpen(true)}
+                className="flex h-full min-h-80 w-full cursor-zoom-in items-center justify-center"
+                aria-label="Open full NIC image"
+              >
+                <img
+                  src={previewUrl}
+                  alt="Private student NIC"
+                  className="max-h-[34rem] max-w-full object-contain"
+                />
+              </button>
             ) : (
               <p className="text-sm font-semibold text-slate-500">
                 No NIC image uploaded
               </p>
             )}
           </div>
+
+          {previewUrl && (
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(true)}
+              className="mt-3 w-full rounded-xl border border-brand-300 bg-brand-50 px-4 py-3 text-sm font-black text-brand-700"
+            >
+              Open full NIC image
+            </button>
+          )}
 
           <dl className="mt-6 grid gap-5 sm:grid-cols-2">
             <div>
@@ -850,6 +871,13 @@ export default function AdminStudentPage() {
           </div>
         )}
       </section>
+      <DocumentPreviewModal
+        isOpen={isPreviewOpen}
+        url={previewUrl}
+        contentType={nicDocument?.mimeType || "image/*"}
+        title="Private student NIC"
+        onClose={() => setIsPreviewOpen(false)}
+      />
     </div>
   );
 }

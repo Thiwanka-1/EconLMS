@@ -141,10 +141,53 @@ if (
     "COOKIE_MAX_AGE_DAYS must be a positive number."
   );
 
-  const emailProvider = String(process.env.EMAIL_PROVIDER || "resend").trim().toLowerCase();
+  const emailProvider = String(process.env.EMAIL_PROVIDER || "smtp").trim().toLowerCase();
 
-  addError(errors, emailProvider !== "resend", "EMAIL_PROVIDER must currently be set to resend.");
-  requireAll(errors, ["RESEND_API_KEY", "EMAIL_FROM"], "Resend email configuration");
+  addError(errors, emailProvider !== "smtp", "EMAIL_PROVIDER must be set to smtp.");
+  requireAll(
+    errors,
+    ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "EMAIL_FROM"],
+    "SMTP email configuration"
+  );
+
+  addError(
+    errors,
+    hasValue("SMTP_PORT") && !isPositiveNumber(process.env.SMTP_PORT),
+    "SMTP_PORT must be a positive number."
+  );
+
+  const smtpSecure = String(process.env.SMTP_SECURE || "false").trim().toLowerCase();
+
+  addError(
+    errors,
+    !["true", "false"].includes(smtpSecure),
+    "SMTP_SECURE must be true or false."
+  );
+
+  if (hasValue("PAYMENT_REMINDER_DAYS_BEFORE")) {
+    const reminderDays = process.env.PAYMENT_REMINDER_DAYS_BEFORE
+      .split(",")
+      .map((value) => Number.parseInt(value.trim(), 10));
+
+    addError(
+      errors,
+      reminderDays.length === 0 ||
+        reminderDays.some(
+          (value) => !Number.isInteger(value) || value < 0 || value > 31
+        ),
+      "PAYMENT_REMINDER_DAYS_BEFORE must be comma-separated whole numbers from 0 to 31."
+    );
+  }
+
+  if (hasValue("PAYMENT_REMINDER_HOUR")) {
+    const reminderHour = Number.parseInt(process.env.PAYMENT_REMINDER_HOUR, 10);
+
+    addError(
+      errors,
+      !Number.isInteger(reminderHour) || reminderHour < 0 || reminderHour > 23,
+      "PAYMENT_REMINDER_HOUR must be a whole number from 0 to 23."
+    );
+  }
 
   const clientOrigins = String(process.env.CLIENT_ORIGINS || "")
     .split(",")
