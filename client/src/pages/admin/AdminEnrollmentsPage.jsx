@@ -13,6 +13,7 @@ import {
 } from "../../api/courseAdminApi.js";
 
 import {
+  deleteAdminEnrollment,
   getAdminEnrollments,
   updateAdminEnrollmentStatus,
 } from "../../api/enrollmentAdminApi.js";
@@ -234,6 +235,30 @@ export default function AdminEnrollmentsPage() {
         requestError.message ||
           "Enrolment status could not be updated."
       );
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const deleteEnrollment = async (enrollment) => {
+    const confirmation = window.prompt(
+      "Permanently delete this enrolment, its payment submissions, playback history, related notifications and Zoom registrations? Enter DELETE to confirm."
+    );
+
+    if (confirmation === null) {
+      return;
+    }
+
+    setBusyId(enrollment._id);
+    setError("");
+    setSuccess("");
+
+    try {
+      const result = await deleteAdminEnrollment(enrollment._id, confirmation);
+      setSuccess(result.message || "Enrolment permanently deleted.");
+      await loadEnrollments(pagination.currentPage);
+    } catch (requestError) {
+      setError(requestError.message || "Enrolment could not be deleted.");
     } finally {
       setBusyId("");
     }
@@ -678,6 +703,17 @@ export default function AdminEnrollmentsPage() {
                           ? "Saving status…"
                           : "Save enrolment status"}
                       </button>
+
+                      {["cancelled", "suspended"].includes(enrollment.status) && (
+                        <button
+                          type="button"
+                          disabled={busyId === enrollment._id}
+                          onClick={() => void deleteEnrollment(enrollment)}
+                          className="mt-3 w-full rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-black text-red-700 disabled:opacity-50"
+                        >
+                          Delete old enrolment
+                        </button>
+                      )}
                     </div>
                   </div>
                 </article>

@@ -58,6 +58,12 @@ services:
         value: "465"
       - key: SMTP_SECURE
         value: "true"
+      - key: SMTP_CONNECTION_TIMEOUT_MS
+        value: "10000"
+      - key: SMTP_GREETING_TIMEOUT_MS
+        value: "10000"
+      - key: SMTP_SOCKET_TIMEOUT_MS
+        value: "20000"
       - key: SMTP_USER
         sync: false
       - key: SMTP_PASS
@@ -88,6 +94,10 @@ services:
         value: "30"
       - key: ZOOM_DEFAULT_JOIN_AFTER_MINUTES
         value: "15"
+      - key: ZOOM_REGISTRATION_MAX_ATTEMPTS
+        value: "10"
+      - key: ZOOM_REQUEST_TIMEOUT_MS
+        value: "15000"
 
       - key: DEFAULT_LESSON_MAX_VIEWS
         value: "2"
@@ -129,6 +139,8 @@ services:
       # https://econlls-api.onrender.com/api
       - key: VITE_API_BASE_URL
         sync: false
+      - key: VITE_API_TIMEOUT_MS
+        value: "30000"
     routes:
       - type: rewrite
         source: /*

@@ -8,6 +8,12 @@ import {
 import {
   sendDuePaymentReminders,
 } from "../services/paymentReminderService.js";
+import { processPendingNotificationEmails } from "../services/notificationService.js";
+import {
+  retryPendingZoomRegistrations,
+  retryPendingZoomRevocations,
+} from "../services/zoomRegistrationService.js";
+import { runWithJobLease } from "./jobLease.js";
 
 const getApplicationTimezone = () => {
   return process.env.APP_TIMEZONE || "Asia/Colombo";
@@ -174,9 +180,11 @@ export const scheduleMonthlyBillingGeneration = () => {
       );
 
       try {
-        await runMonthlyBillingGeneration({
-          source: "scheduled",
-        });
+        await runWithJobLease(
+          "monthly-billing-generation",
+          () => runMonthlyBillingGeneration({ source: "scheduled" }),
+          { leaseMilliseconds: 30 * 60 * 1000 }
+        );
       } catch (error) {
         console.error(
           "[BILLING_JOB] Critical scheduled-job error:",
@@ -208,16 +216,20 @@ export const scheduleMonthlyBillingGeneration = () => {
 
 export const triggerMonthlyBillingGenerationNow =
   async () => {
-    return runMonthlyBillingGeneration({
-      source: "manual",
-    });
+    return runWithJobLease(
+      "monthly-billing-generation",
+      () => runMonthlyBillingGeneration({ source: "manual" }),
+      { leaseMilliseconds: 30 * 60 * 1000 }
+    );
   };
 
 export const runBillingGenerationOnStartup =
   async () => {
-    return runMonthlyBillingGeneration({
-      source: "startup",
-    });
+    return runWithJobLease(
+      "monthly-billing-generation",
+      () => runMonthlyBillingGeneration({ source: "startup" }),
+      { leaseMilliseconds: 30 * 60 * 1000 }
+    );
   };
 
 export const schedulePaymentReminders = () => {
@@ -239,9 +251,11 @@ export const schedulePaymentReminders = () => {
 
   const job = schedule.scheduleJob(rule, async () => {
     try {
-      await sendDuePaymentReminders({
-        source: "scheduled",
-      });
+      await runWithJobLease(
+        "payment-reminders",
+        () => sendDuePaymentReminders({ source: "scheduled" }),
+        { leaseMilliseconds: 30 * 60 * 1000 }
+      );
     } catch (error) {
       console.error(
         "[PAYMENT_REMINDER] Scheduled job failed:",
@@ -262,10 +276,54 @@ export const schedulePaymentReminders = () => {
 };
 
 export const runPaymentRemindersOnStartup = async () => {
-  return sendDuePaymentReminders({
-    source: "startup",
-  });
+  return runWithJobLease(
+    "payment-reminders",
+    () => sendDuePaymentReminders({ source: "startup" }),
+    { leaseMilliseconds: 30 * 60 * 1000 }
+  );
 };
+
+const runBackgroundMaintenance = async () => {
+  return runWithJobLease(
+    "notification-and-zoom-retries",
+    async () => {
+      const [email, zoom, zoomRevocations] = await Promise.all([
+        processPendingNotificationEmails({ limit: 50 }),
+        retryPendingZoomRegistrations({ limit: 20 }),
+        retryPendingZoomRevocations({ limit: 20 }),
+      ]);
+
+      console.log("[MAINTENANCE] Retry processing completed:", {
+        email,
+        zoom,
+        zoomRevocations,
+      });
+      return { email, zoom, zoomRevocations };
+    },
+    { leaseMilliseconds: 10 * 60 * 1000 }
+  );
+};
+
+export const scheduleBackgroundMaintenance = () => {
+  const rule = new schedule.RecurrenceRule();
+  rule.tz = getApplicationTimezone();
+  rule.minute = new schedule.Range(0, 59, 5);
+  rule.second = 30;
+
+  const job = schedule.scheduleJob(rule, () => {
+    void runBackgroundMaintenance().catch((error) => {
+      console.error("[MAINTENANCE] Scheduled retry processing failed:", error.message);
+    });
+  });
+
+  if (!job) {
+    throw new Error("Background maintenance job could not be scheduled.");
+  }
+
+  return job;
+};
+
+export const runBackgroundMaintenanceOnStartup = runBackgroundMaintenance;
 
 export const shutdownScheduledJobs = async () => {
   await schedule.gracefulShutdown();

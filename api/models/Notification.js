@@ -7,6 +7,7 @@ const emailDeliverySchema =
         type: String,
         enum: [
           "pending",
+          "processing",
           "sent",
           "failed",
           "skipped",
@@ -29,6 +30,17 @@ const emailDeliverySchema =
         default: null,
       },
 
+      attempts: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+
+      nextAttemptAt: {
+        type: Date,
+        default: null,
+      },
+
       sentAt: {
         type: Date,
         default: null,
@@ -44,6 +56,15 @@ const emailDeliverySchema =
       _id: false,
     }
   );
+
+const emailPayloadSchema = new mongoose.Schema(
+  {
+    subject: { type: String, default: "", maxlength: 500 },
+    text: { type: String, default: "", maxlength: 20_000 },
+    html: { type: String, default: "", maxlength: 50_000 },
+  },
+  { _id: false }
+);
 
 const notificationSchema =
   new mongoose.Schema(
@@ -129,6 +150,12 @@ const notificationSchema =
           provider: "smtp",
         }),
       },
+
+      emailPayload: {
+        type: emailPayloadSchema,
+        default: null,
+        select: false,
+      },
     },
     {
       timestamps: true,
@@ -140,6 +167,8 @@ const notificationSchema =
           if (object.emailDelivery) {
             delete object.emailDelivery.error;
           }
+
+          delete object.emailPayload;
 
           return object;
         },
@@ -165,6 +194,12 @@ notificationSchema.index({
   recipient: 1,
   isRead: 1,
   createdAt: -1,
+});
+
+notificationSchema.index({
+  "emailDelivery.status": 1,
+  "emailDelivery.nextAttemptAt": 1,
+  createdAt: 1,
 });
 
 const Notification = mongoose.model(

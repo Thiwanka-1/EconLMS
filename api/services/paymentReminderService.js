@@ -27,6 +27,15 @@ export const getPaymentReminderDays = () => {
   return [...new Set(parsedDays)].sort((left, right) => right - left);
 };
 
+export const getApplicableReminderDay = (reminderDays, daysRemaining) => {
+  if (daysRemaining < 0) {
+    return null;
+  }
+
+  const eligible = reminderDays.filter((day) => day >= daysRemaining);
+  return eligible.length > 0 ? Math.min(...eligible) : null;
+};
+
 const getDaysUntilDeadline = (deadline, now) => {
   const timezone = getTimezone();
   const today = DateTime.fromJSDate(now).setZone(timezone).startOf("day");
@@ -64,12 +73,16 @@ export const sendDuePaymentReminders = async ({
       billingPeriod,
       daysRemaining: getDaysUntilDeadline(billingPeriod.paymentDeadline, now),
     }))
+    .map((entry) => ({
+      ...entry,
+      reminderDay: getApplicableReminderDay(reminderDays, entry.daysRemaining),
+    }))
     .filter(
-      ({ billingPeriod, daysRemaining }) =>
+      ({ billingPeriod, reminderDay }) =>
         billingPeriod.course?.paymentPlan === "monthly" &&
         billingPeriod.course.isPublished &&
         !billingPeriod.course.isArchived &&
-        reminderDays.includes(daysRemaining),
+        reminderDay !== null,
     );
 
   if (periods.length === 0) {
@@ -105,7 +118,7 @@ export const sendDuePaymentReminders = async ({
 
   const results = [];
 
-  for (const { billingPeriod, daysRemaining } of periods) {
+  for (const { billingPeriod, daysRemaining, reminderDay } of periods) {
     const periodId = billingPeriod._id.toString();
     const courseId = billingPeriod.course._id.toString();
     const deadlineLabel = DateTime.fromJSDate(billingPeriod.paymentDeadline)
@@ -126,9 +139,11 @@ export const sendDuePaymentReminders = async ({
       }
 
       const actionUrl = "/student/payments";
-      const timing = daysRemaining === 1
-        ? "tomorrow"
-        : `in ${daysRemaining} days`;
+      const timing = daysRemaining === 0
+        ? "today"
+        : daysRemaining === 1
+          ? "tomorrow"
+          : `in ${daysRemaining} days`;
 
       results.push(
         createUserNotification({
@@ -142,8 +157,9 @@ export const sendDuePaymentReminders = async ({
             billingPeriodId: billingPeriod._id,
             paymentDeadline: billingPeriod.paymentDeadline,
             daysRemaining,
+            scheduledReminderDay: reminderDay,
           },
-          deduplicationKey: `payment-reminder/${periodId}/${enrollment.student._id}/${daysRemaining}`,
+          deduplicationKey: `payment-reminder/${periodId}/${enrollment.student._id}/${reminderDay}`,
           emailTemplate: createPaymentReminderEmail({
             student: enrollment.student,
             courseTitle: billingPeriod.course.title,

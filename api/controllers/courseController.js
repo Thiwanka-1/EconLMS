@@ -6,6 +6,7 @@ import PaymentSubmission from "../models/PaymentSubmission.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
+import { revokeZoomRegistrations } from "../services/zoomRegistrationService.js";
 import slugify from "../utils/slugify.js";
 import {
   getOrCreateCurrentBillingPeriod,
@@ -604,6 +605,12 @@ export const setCoursePublication = asyncHandler(async (req, res) => {
 
   await course.save();
 
+  let zoomRevocation = null;
+
+  if (!isPublished) {
+    zoomRevocation = await revokeZoomRegistrations({ courseId: course._id });
+  }
+
   let currentBillingPeriod = null;
 
   if (isPublished && course.paymentPlan === "monthly" && !course.isArchived) {
@@ -622,8 +629,9 @@ export const setCoursePublication = asyncHandler(async (req, res) => {
     message: isPublished
       ? "Course published successfully."
       : "Course unpublished successfully.",
-    course,
-    currentBillingPeriod,
+      course,
+      currentBillingPeriod,
+      zoomRevocation,
   });
 });
 
@@ -696,10 +704,15 @@ export const archiveCourse = asyncHandler(
 
     await course.save();
 
+    const zoomRevocation = await revokeZoomRegistrations({
+      courseId: course._id,
+    });
+
     res.status(200).json({
       success: true,
       message: "Course archived successfully.",
       course,
+      zoomRevocation,
     });
   }
 );

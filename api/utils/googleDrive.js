@@ -342,7 +342,15 @@ export const deleteDriveFile =
 
     const drive = getDriveClient();
 
-    await drive.files.delete({
-      fileId,
-    });
+    try {
+      await drive.files.delete({
+        fileId,
+      });
+    } catch (error) {
+      if (error?.code === 404 || error?.response?.status === 404) {
+        return;
+      }
+
+      throw error;
+    }
   };

@@ -27,6 +27,7 @@ import {
 } from "../middlewares/securityMiddleware.js";
 
 import { validatePaymentSlipSignature } from "../middlewares/uploadSignatureMiddleware.js";
+import { deleteEnrollmentPermanently } from "../controllers/cleanupController.js";
 
 const router = express.Router();
 
@@ -76,6 +77,13 @@ router.patch(
   authorize("admin"),
   validateObjectIdParam("id"),
   setEnrollmentStatus
+);
+
+router.delete(
+  "/:id",
+  authorize("admin"),
+  validateObjectIdParam("id"),
+  deleteEnrollmentPermanently
 );
 
 router.get(

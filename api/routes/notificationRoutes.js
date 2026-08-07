@@ -1,6 +1,9 @@
 import express from "express";
 
 import {
+  deleteAllMyNotifications,
+  deleteMyNotification,
+  deleteMyReadNotifications,
   getMyNotifications,
   getMyUnreadCount,
   markAllNotificationsRead,
@@ -32,6 +35,22 @@ router.get(
 router.patch(
   "/me/read-all",
   markAllNotificationsRead
+);
+
+router.delete(
+  "/me/read",
+  deleteMyReadNotifications
+);
+
+router.delete(
+  "/me",
+  deleteAllMyNotifications
+);
+
+router.delete(
+  "/:id",
+  validateObjectIdParam("id"),
+  deleteMyNotification
 );
 
 router.patch(

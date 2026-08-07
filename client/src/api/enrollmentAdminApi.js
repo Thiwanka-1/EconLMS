@@ -42,3 +42,10 @@ export const updateAdminEnrollmentStatus =
       }
     );
   };
+
+export const deleteAdminEnrollment = (enrollmentId, confirmation) => {
+  return apiRequest(`/enrollments/${encodeURIComponent(enrollmentId)}`, {
+    method: "DELETE",
+    body: { confirmation },
+  });
+};

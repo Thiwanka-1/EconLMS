@@ -156,6 +156,18 @@ if (
     "SMTP_PORT must be a positive number."
   );
 
+  for (const timeoutName of [
+    "SMTP_CONNECTION_TIMEOUT_MS",
+    "SMTP_GREETING_TIMEOUT_MS",
+    "SMTP_SOCKET_TIMEOUT_MS",
+  ]) {
+    addError(
+      errors,
+      hasValue(timeoutName) && !isPositiveNumber(process.env[timeoutName]),
+      `${timeoutName} must be a positive number.`
+    );
+  }
+
   const smtpSecure = String(process.env.SMTP_SECURE || "false").trim().toLowerCase();
 
   addError(
@@ -261,6 +273,17 @@ if (
           !/^[a-fA-F0-9]{64}$/.test(process.env.ZOOM_LINK_ENCRYPTION_KEY)
       ),
       "ZOOM_LINK_ENCRYPTION_KEY must be a 64-character hexadecimal value."
+    );
+  }
+
+  for (const zoomNumberName of [
+    "ZOOM_REGISTRATION_MAX_ATTEMPTS",
+    "ZOOM_REQUEST_TIMEOUT_MS",
+  ]) {
+    addError(
+      errors,
+      hasValue(zoomNumberName) && !isPositiveNumber(process.env[zoomNumberName]),
+      `${zoomNumberName} must be a positive number.`
     );
   }
 

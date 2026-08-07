@@ -19,6 +19,7 @@ import {
 } from "../middlewares/authMiddleware.js";
 
 import validateObjectId from "../middlewares/validateObjectId.js";
+import { deleteCoursePermanently } from "../controllers/cleanupController.js";
 
 const router = express.Router();
 
@@ -86,6 +87,14 @@ router.patch(
   authorize("admin"),
   validateObjectId,
   restoreCourse
+);
+
+router.delete(
+  "/:id",
+  protect,
+  authorize("admin"),
+  validateObjectId,
+  deleteCoursePermanently
 );
 
 /*

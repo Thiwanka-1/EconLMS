@@ -9,6 +9,9 @@ import {
 } from "react-router";
 
 import {
+  deleteAllMyNotifications,
+  deleteMyNotification,
+  deleteMyReadNotifications,
   getMyNotifications,
   markAllMyNotificationsRead,
   markMyNotificationRead,
@@ -332,6 +335,54 @@ export default function NotificationsPage() {
       }
     };
 
+  const deleteNotification = async (notification) => {
+    if (!window.confirm("Delete this notification?")) {
+      return;
+    }
+
+    setBusyId(`delete-${notification._id}`);
+    setError("");
+    setSuccess("");
+
+    try {
+      const result = await deleteMyNotification(notification._id);
+      setSuccess(result.message || "Notification deleted.");
+      await loadNotifications(pagination.page);
+    } catch (requestError) {
+      setError(requestError.message || "Notification could not be deleted.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const clearNotifications = async (all) => {
+    const confirmed = window.confirm(
+      all
+        ? "Permanently delete all notifications for your account?"
+        : "Delete all notifications that you have already read?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setBusyId(all ? "delete-all" : "delete-read");
+    setError("");
+    setSuccess("");
+
+    try {
+      const result = all
+        ? await deleteAllMyNotifications()
+        : await deleteMyReadNotifications();
+      setSuccess(result.message || "Notifications deleted.");
+      await loadNotifications(1);
+    } catch (requestError) {
+      setError(requestError.message || "Notifications could not be deleted.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
   const isAdmin =
     user?.role === "admin";
 
@@ -346,7 +397,7 @@ export default function NotificationsPage() {
         title="Notifications"
         description="Review payment, NIC and system notifications associated with your account."
         action={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <StatusBadge
               status={
                 unreadCount > 0
@@ -370,6 +421,24 @@ export default function NotificationsPage() {
               "read-all"
                 ? "Updating…"
                 : "Mark all read"}
+            </button>
+
+            <button
+              type="button"
+              disabled={Boolean(busyId)}
+              onClick={() => void clearNotifications(false)}
+              className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-700 disabled:opacity-40"
+            >
+              Clear read
+            </button>
+
+            <button
+              type="button"
+              disabled={Boolean(busyId) || pagination.total === 0}
+              onClick={() => void clearNotifications(true)}
+              className="rounded-2xl border border-red-300 bg-red-50 px-5 py-3 text-sm font-black text-red-700 disabled:opacity-40"
+            >
+              Clear all
             </button>
           </div>
         }
@@ -571,6 +640,15 @@ export default function NotificationsPage() {
                           Open
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        disabled={Boolean(busyId)}
+                        onClick={() => void deleteNotification(notification)}
+                        className="rounded-xl border border-red-300 px-4 py-2.5 text-sm font-black text-red-700 disabled:opacity-50"
+                      >
+                        {busyId === `delete-${notification._id}` ? "Deleting…" : "Delete"}
+                      </button>
                     </div>
                   </div>
                 </article>

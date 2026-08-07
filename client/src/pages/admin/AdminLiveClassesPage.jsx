@@ -15,6 +15,7 @@ import {
 
 import {
   createAdminLiveClass,
+  deleteAdminLiveClass,
   getAdminLiveClasses,
   refreshAdminLiveClass,
   syncAdminLiveClass,
@@ -1078,6 +1079,29 @@ export default function AdminLiveClassesPage() {
                         >
                           Synchronize students
                         </button>
+
+                        {(liveClass.status !== "scheduled" || !liveClass.isPublished) && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              const confirmation = window.prompt(
+                                `Permanently delete this old live class and its Zoom registration records? Enter the exact title to confirm:\n\n${liveClass.title}`
+                              );
+
+                              if (confirmation !== null) {
+                                void runAction({
+                                  key: `delete-${liveClass._id}`,
+                                  action: () =>
+                                    deleteAdminLiveClass(liveClass._id, confirmation),
+                                });
+                              }
+                            }}
+                            className="rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 disabled:opacity-50"
+                          >
+                            Delete old live class
+                          </button>
+                        )}
                       </div>
 
                       {busy && (

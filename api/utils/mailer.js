@@ -39,6 +39,12 @@ const getSmtpTransporter = () => {
       secure,
       requireTLS: !secure,
       pool: true,
+      connectionTimeout:
+        Number.parseInt(process.env.SMTP_CONNECTION_TIMEOUT_MS || "10000", 10) || 10_000,
+      greetingTimeout:
+        Number.parseInt(process.env.SMTP_GREETING_TIMEOUT_MS || "10000", 10) || 10_000,
+      socketTimeout:
+        Number.parseInt(process.env.SMTP_SOCKET_TIMEOUT_MS || "20000", 10) || 20_000,
       maxConnections: Math.max(
         Number.parseInt(process.env.SMTP_MAX_CONNECTIONS || "3", 10) || 3,
         1,

@@ -69,3 +69,10 @@ export const setAdminUserStatus = (
     }
   );
 };
+
+export const deleteAdminStudent = (userId, confirmation) => {
+  return apiRequest(`/users/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+    body: { confirmation },
+  });
+};

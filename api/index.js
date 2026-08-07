@@ -13,6 +13,8 @@ import asyncHandler from "./utils/asyncHandler.js";
 import {
   runBillingGenerationOnStartup,
   runPaymentRemindersOnStartup,
+  runBackgroundMaintenanceOnStartup,
+  scheduleBackgroundMaintenance,
   scheduleMonthlyBillingGeneration,
   schedulePaymentReminders,
   shutdownScheduledJobs,
@@ -192,11 +194,19 @@ if (
 app.get(
   "/api/health",
   (req, res) => {
-    res.status(200).json({
-      success: true,
+    const databaseReady = mongoose.connection.readyState === 1;
+
+    res.status(databaseReady ? 200 : 503).json({
+      success: databaseReady,
 
       message:
-        "EconLLS API is running.",
+        databaseReady
+          ? "EconLLS API is healthy."
+          : "EconLLS API cannot reach its database.",
+
+      dependencies: {
+        mongodb: databaseReady ? "connected" : "unavailable",
+      },
 
       environment:
         process.env.NODE_ENV,
@@ -319,6 +329,7 @@ app.use(errorHandler);
 let server = null;
 let monthlyBillingJob = null;
 let paymentReminderJob = null;
+let backgroundMaintenanceJob = null;
 
 const startServer = async () => {
   try {
@@ -382,6 +393,15 @@ const startServer = async () => {
         "[PAYMENT_REMINDER] Initialization failed:",
         error.message,
       );
+    }
+
+    try {
+      backgroundMaintenanceJob = scheduleBackgroundMaintenance();
+      void runBackgroundMaintenanceOnStartup().catch((error) => {
+        console.error("[MAINTENANCE] Startup retry processing failed:", error.message);
+      });
+    } catch (error) {
+      console.error("[MAINTENANCE] Initialization failed:", error.message);
     }
 
     server = app.listen(

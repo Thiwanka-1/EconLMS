@@ -9,6 +9,7 @@ import {
   syncLiveClass,
   updateLiveClassStatus,
 } from "../controllers/liveClassController.js";
+import { deleteLiveClassPermanently } from "../controllers/cleanupController.js";
 
 import {
   authorize,
@@ -50,6 +51,13 @@ router.patch(
   authorize("admin"),
   validateObjectIdParam("id"),
   refreshLiveClassFromZoom
+);
+
+router.delete(
+  "/admin/:id",
+  authorize("admin"),
+  validateObjectIdParam("id"),
+  deleteLiveClassPermanently
 );
 
 router.patch(

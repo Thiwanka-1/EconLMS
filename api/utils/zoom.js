@@ -9,6 +9,15 @@ let tokenCache = {
   expiresAt: 0,
 };
 
+const getZoomRequestSignal = () => {
+  const timeout = Math.max(
+    Number.parseInt(process.env.ZOOM_REQUEST_TIMEOUT_MS || "15000", 10) || 15_000,
+    5_000
+  );
+
+  return AbortSignal.timeout(timeout);
+};
+
 export class ZoomApiError extends Error {
   constructor({
     message,
@@ -84,6 +93,7 @@ const getZoomAccessToken = async ({
     `${ZOOM_TOKEN_URL}?${query.toString()}`,
     {
       method: "POST",
+      signal: getZoomRequestSignal(),
 
       headers: {
         Authorization: `Basic ${credentials}`,
@@ -144,6 +154,7 @@ const zoomRequest = async (
     `${ZOOM_API_BASE_URL}${path}${queryString}`,
     {
       method,
+      signal: getZoomRequestSignal(),
 
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -17,6 +17,7 @@ import {
   finalizeStaleSessionIfNeeded,
   getLessonViewSummary,
   getOrCreateLessonView,
+  isPlaybackSessionStale,
 } from "../utils/playback.js";
 
 const getAvailableLesson = async (
@@ -116,16 +117,17 @@ export const startPlayback =
       });
 
     /*
-     * Check the caller's session before applying
-     * the stale-session timeout. A refresh or Back
-     * navigation can therefore recover the same
-     * browser session without consuming a view.
+     * A refresh or Back navigation can recover the
+     * same browser session while it is still fresh.
+     * Expired sessions are finalized below and
+     * cannot be revived with a stored session ID.
      */
     if (
       lessonView.activeSession &&
       requestedSessionId &&
       requestedSessionId ===
-        lessonView.activeSession.sessionId
+        lessonView.activeSession.sessionId &&
+      !isPlaybackSessionStale(lessonView.activeSession)
     ) {
       const knownDuration = Math.max(
         Number(
@@ -135,13 +137,22 @@ export const startPlayback =
         0
       );
 
-      const resumedWatchedSeconds =
-        knownDuration > 0
-          ? Math.min(
-              requestedWatchedSeconds,
-              knownDuration
-            )
-          : requestedWatchedSeconds;
+      const storedWatchedSeconds = Math.max(
+        Number(lessonView.activeSession.watchedSeconds) || 0,
+        0
+      );
+      const elapsedSeconds = Math.max(
+        (Date.now() - new Date(lessonView.activeSession.lastHeartbeatAt).getTime()) /
+          1000,
+        0
+      );
+      const plausibleWatchedSeconds = Math.min(
+        requestedWatchedSeconds,
+        storedWatchedSeconds + elapsedSeconds * 2 + 5
+      );
+      const resumedWatchedSeconds = knownDuration > 0
+        ? Math.min(plausibleWatchedSeconds, knownDuration)
+        : plausibleWatchedSeconds;
 
       lessonView =
         await LessonView.findOneAndUpdate(
@@ -358,6 +369,19 @@ export const playbackHeartbeat =
       );
     }
 
+    if (isPlaybackSessionStale(lessonView.activeSession)) {
+      await finalizePlaybackSession({
+        lessonView,
+        sessionId: req.params.sessionId,
+        status: "timeout",
+      });
+
+      throw new HttpError(
+        409,
+        "This playback session expired after being inactive. Start a new viewing session."
+      );
+    }
+
     const update = {
       $set: {
         "activeSession.lastHeartbeatAt":
@@ -378,9 +402,22 @@ export const playbackHeartbeat =
         Number.isFinite(watched) &&
         watched >= 0
       ) {
+        const currentWatched = Number(
+          lessonView.activeSession.watchedSeconds || 0
+        );
+        const elapsedSeconds = Math.max(
+          (Date.now() -
+            new Date(lessonView.activeSession.lastHeartbeatAt).getTime()) /
+            1000,
+          0
+        );
+
         maxValues[
           "activeSession.watchedSeconds"
-        ] = watched;
+        ] = Math.min(
+          watched,
+          currentWatched + elapsedSeconds * 2 + 5
+        );
       }
     }
 
@@ -393,7 +430,8 @@ export const playbackHeartbeat =
 
       if (
         Number.isFinite(duration) &&
-        duration >= 0
+        duration >= 0 &&
+        duration <= 24 * 60 * 60
       ) {
         maxValues[
           "activeSession.durationSeconds"

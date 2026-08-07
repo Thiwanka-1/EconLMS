@@ -1,4 +1,3 @@
-import Enrollment from "../models/Enrollment.js";
 import PaymentSubmission from "../models/PaymentSubmission.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
@@ -8,6 +7,10 @@ import {registerStudentForEligibleLiveClasses} from "../services/zoomRegistratio
 import {getDriveFileStream} from "../utils/googleDrive.js";
 
 import {processPaymentDecisionSideEffects} from "../services/decisionNotificationService.js";
+import {
+  approvePaymentAtomically,
+  rejectPaymentAtomically,
+} from "../services/paymentDecisionService.js";
 
 export const getMyPaymentSubmissions =
   asyncHandler(async (req, res) => {
@@ -238,21 +241,17 @@ export const viewPaymentSlip =
 
 export const approvePayment =
   asyncHandler(async (req, res) => {
-    const payment =
-      await PaymentSubmission.findById(
-        req.params.id
-      );
+    const decision = await approvePaymentAtomically({
+      paymentId: req.params.id,
+      administratorId: req.user._id,
+      reviewNote:
+        typeof req.body.reviewNote === "string"
+          ? req.body.reviewNote.trim()
+          : "",
+    });
+    const { payment, enrollment } = decision;
 
-    if (!payment) {
-      throw new HttpError(
-        404,
-        "Payment submission not found."
-      );
-    }
-
-    if (
-      payment.status === "approved"
-    ) {
+    if (decision.alreadyApproved) {
       return res.status(200).json({
         success: true,
         message:
@@ -261,109 +260,25 @@ export const approvePayment =
       });
     }
 
-    if (
-      payment.status !== "pending"
-    ) {
-      throw new HttpError(
-        409,
-        "Only pending payments can be approved."
-      );
-    }
-
-    const approvalDate = new Date();
-
-    const enrollment =
-      await Enrollment.findById(
-        payment.enrollment
-      );
-
-    if (!enrollment) {
-      throw new HttpError(
-        404,
-        "Associated enrolment not found."
-      );
-    }
-
-    if (
-      payment.paymentPlan ===
-      "monthly"
-    ) {
-      if (!payment.billingPeriod) {
-        throw new HttpError(
-          500,
-          "Monthly payment has no billing period."
-        );
-      }
-
-      enrollment
-        .approvedBillingPeriods
-        .addToSet(
-          payment.billingPeriod
-        );
-    } else {
-      enrollment.oneTimeAccessGrantedAt =
-        approvalDate;
-    }
-
-    enrollment.status = "active";
-    enrollment.lastPaymentApprovedAt =
-      approvalDate;
-    enrollment.statusReason = "";
-    enrollment.managedBy =
-      req.user._id;
-
-    /*
-     * Save the access first. If the second save
-     * fails, approving again remains safe because
-     * addToSet does not duplicate the period.
-     */
-    await enrollment.save();
-
-    payment.status = "approved";
-    payment.reviewNote =
-      typeof req.body.reviewNote === "string"
-        ? req.body.reviewNote.trim()
-        : "";
-    payment.reviewedBy = req.user._id;
-    payment.reviewedAt =
-      approvalDate;
-    payment.approvedAt =
-      approvalDate;
-    payment.rejectedAt = null;
-
-    await payment.save();
-
     //new zoom logic
-    let zoomRegistrationSync = null;
+    const zoomRegistrationSync = {
+      queued: true,
+      message: "Eligible Zoom registrations are being synchronized in the background.",
+    };
 
-try {
-  zoomRegistrationSync =
-    await registerStudentForEligibleLiveClasses(
-      {
-        studentId:
-          payment.student,
-
-        courseId:
-          payment.course,
-
+    setImmediate(() => {
+      void registerStudentForEligibleLiveClasses({
+        studentId: payment.student,
+        courseId: payment.course,
         billingPeriodId:
-          payment.paymentPlan ===
-          "monthly"
-            ? payment.billingPeriod
-            : null,
-      }
-    );
-} catch (error) {
-  console.error(
-    "Zoom registration sync failed after payment approval:",
-    error.message
-  );
-
-  zoomRegistrationSync = {
-    success: false,
-    error: error.message,
-  };
-}
+          payment.paymentPlan === "monthly" ? payment.billingPeriod : null,
+      }).catch((error) => {
+        console.error(
+          "Zoom registration sync failed after payment approval:",
+          error.message
+        );
+      });
+    });
 
 let notificationResult = { success: false };
 
@@ -407,21 +322,14 @@ export const rejectPayment =
       throw new HttpError(400, "A rejection reason is required.");
     }
 
-    const payment =
-      await PaymentSubmission.findById(
-        req.params.id
-      );
+    const decision = await rejectPaymentAtomically({
+      paymentId: req.params.id,
+      administratorId: req.user._id,
+      reviewNote,
+    });
+    const { payment } = decision;
 
-    if (!payment) {
-      throw new HttpError(
-        404,
-        "Payment submission not found."
-      );
-    }
-
-    if (
-      payment.status === "rejected"
-    ) {
+    if (decision.alreadyRejected) {
       return res.status(200).json({
         success: true,
         message:
@@ -429,26 +337,6 @@ export const rejectPayment =
         paymentSubmission: payment,
       });
     }
-
-    if (
-      payment.status !== "pending"
-    ) {
-      throw new HttpError(
-        409,
-        "Only pending payments can be rejected."
-      );
-    }
-
-    payment.status = "rejected";
-    payment.reviewNote = reviewNote;
-    payment.reviewedBy = req.user._id;
-    payment.reviewedAt =
-      new Date();
-    payment.rejectedAt =
-      new Date();
-    payment.approvedAt = null;
-
-    await payment.save();
 
     const rejectionReason = payment.reviewNote;
     let notificationResult = { success: false };

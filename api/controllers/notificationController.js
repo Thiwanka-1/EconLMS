@@ -132,3 +132,46 @@ export const markAllNotificationsRead = asyncHandler(async (req, res) => {
     modifiedCount: result.modifiedCount,
   });
 });
+
+export const deleteMyNotification = asyncHandler(async (req, res) => {
+  const result = await Notification.deleteOne({
+    _id: req.params.id,
+    recipient: req.user._id,
+  });
+
+  if (result.deletedCount === 0) {
+    throw new HttpError(404, "Notification not found.");
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Notification deleted.",
+  });
+});
+
+export const deleteMyReadNotifications = asyncHandler(async (req, res) => {
+  const result = await Notification.deleteMany({
+    recipient: req.user._id,
+    isRead: true,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `${result.deletedCount} read notification(s) deleted.`,
+    deletedCount: result.deletedCount,
+  });
+});
+
+export const deleteAllMyNotifications = asyncHandler(async (req, res) => {
+  if (String(req.body?.confirmation || "").trim().toUpperCase() !== "DELETE") {
+    throw new HttpError(400, "Enter DELETE to confirm notification cleanup.");
+  }
+
+  const result = await Notification.deleteMany({ recipient: req.user._id });
+
+  res.status(200).json({
+    success: true,
+    message: `${result.deletedCount} notification(s) deleted.`,
+    deletedCount: result.deletedCount,
+  });
+});

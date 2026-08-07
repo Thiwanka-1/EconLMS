@@ -6,6 +6,7 @@ import {
 
 import {
   Link,
+  useNavigate,
   useParams,
 } from "react-router";
 
@@ -19,6 +20,7 @@ import {
 } from "../../api/billingPeriodAdminApi.js";
 
 import {
+  deleteAdminCourse,
   getAdminCourse,
   setAdminCourseEnrollment,
   setAdminCoursePublication,
@@ -313,6 +315,7 @@ const createLessonEditForm = (
 });
 
 export default function AdminCoursePage() {
+  const navigate = useNavigate();
   const {
     courseId,
   } = useParams();
@@ -557,6 +560,28 @@ export default function AdminCoursePage() {
           "The operation failed."
       );
     } finally {
+      setBusyId("");
+    }
+  };
+
+  const deleteCourse = async () => {
+    const confirmation = window.prompt(
+      `This permanently deletes the course and all related lessons, billing periods, live classes, enrolments, payments, playback history and notifications. Enter ${course.code} to confirm.`
+    );
+
+    if (confirmation === null) {
+      return;
+    }
+
+    setBusyId("course-delete");
+    setError("");
+    setSuccess("");
+
+    try {
+      await deleteAdminCourse(courseId, confirmation);
+      navigate("/admin/courses", { replace: true });
+    } catch (requestError) {
+      setError(requestError.message || "Course could not be permanently deleted.");
       setBusyId("");
     }
   };
@@ -837,6 +862,17 @@ export default function AdminCoursePage() {
                     : "Enrolment closed"
                 }
               />
+
+              {course.isArchived && !course.isPublished && (
+                <button
+                  type="button"
+                  disabled={Boolean(busyId)}
+                  onClick={() => void deleteCourse()}
+                  className="rounded-xl bg-red-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50"
+                >
+                  {busyId === "course-delete" ? "Deleting…" : "Delete permanently"}
+                </button>
+              )}
             </div>
           }
         />

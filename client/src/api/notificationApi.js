@@ -54,3 +54,20 @@ export const markAllMyNotificationsRead =
       }
     );
   };
+
+export const deleteMyNotification = (notificationId) => {
+  return apiRequest(`/notifications/${encodeURIComponent(notificationId)}`, {
+    method: "DELETE",
+  });
+};
+
+export const deleteMyReadNotifications = () => {
+  return apiRequest("/notifications/me/read", { method: "DELETE" });
+};
+
+export const deleteAllMyNotifications = () => {
+  return apiRequest("/notifications/me", {
+    method: "DELETE",
+    body: { confirmation: "DELETE" },
+  });
+};

@@ -126,3 +126,10 @@ export const restoreAdminCourse = (
     }
   );
 };
+
+export const deleteAdminCourse = (courseId, confirmation) => {
+  return apiRequest(`/courses/${encodeURIComponent(courseId)}`, {
+    method: "DELETE",
+    body: { confirmation },
+  });
+};

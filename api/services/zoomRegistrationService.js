@@ -335,6 +335,7 @@ export const ensureStudentZoomRegistration =
         new Date();
 
       registration.lastError = "";
+      registration.revocationRequired = false;
 
       await registration.save();
 
@@ -541,12 +542,20 @@ const revokeZoomRegistration = async (
     registration.zoomRegistrantId;
 
   if (!registrantId) {
-    const zoomRegistrant =
-      await findZoomRegistrantByEmail({
-        meetingId:
-          registration.zoomMeetingId,
-        email: registration.zoomEmail,
-      });
+    let zoomRegistrant = null;
+
+    try {
+      zoomRegistrant =
+        await findZoomRegistrantByEmail({
+          meetingId:
+            registration.zoomMeetingId,
+          email: registration.zoomEmail,
+        });
+    } catch (error) {
+      if (error?.status !== 404) {
+        throw error;
+      }
+    }
 
     registrantId =
       zoomRegistrant?.registrant_id ||
@@ -555,16 +564,23 @@ const revokeZoomRegistration = async (
   }
 
   if (registrantId) {
-    await deleteZoomMeetingRegistrant({
-      meetingId:
-        registration.zoomMeetingId,
-      registrantId,
-    });
+    try {
+      await deleteZoomMeetingRegistrant({
+        meetingId:
+          registration.zoomMeetingId,
+        registrantId,
+      });
+    } catch (error) {
+      if (error?.status !== 404) {
+        throw error;
+      }
+    }
   }
 
   registration.status = "cancelled";
   registration.encryptedJoinUrl = null;
   registration.lastError = "";
+  registration.revocationRequired = false;
 
   await registration.save();
 };
@@ -629,6 +645,7 @@ export const revokeZoomRegistrations =
           error.message ||
             "Zoom access revocation failed."
         ).slice(0, 1000);
+        registration.revocationRequired = true;
 
         await registration
           .save()
@@ -651,3 +668,85 @@ export const revokeZoomRegistrations =
       failures,
     };
   };
+
+export const retryPendingZoomRegistrations = async ({ limit = 20 } = {}) => {
+  const retryBefore = new Date(Date.now() - 10 * 60 * 1000);
+  const maxAttempts = Math.max(
+    Number.parseInt(process.env.ZOOM_REGISTRATION_MAX_ATTEMPTS || "10", 10) || 10,
+    1
+  );
+
+  const registrations = await ZoomRegistration.find({
+    status: { $in: ["pending", "failed"] },
+    revocationRequired: { $ne: true },
+    attempts: { $lt: maxAttempts },
+    $or: [
+      { lastAttemptAt: null },
+      { lastAttemptAt: { $lte: retryBefore } },
+    ],
+  })
+    .sort({ lastAttemptAt: 1 })
+    .limit(limit);
+
+  const summary = { attempted: 0, succeeded: 0, failed: 0, skipped: 0 };
+
+  for (const registration of registrations) {
+    const [student, liveClass] = await Promise.all([
+      User.findById(registration.student),
+      LiveClass.findById(registration.liveClass),
+    ]);
+
+    if (
+      !student?.isActive ||
+      !liveClass ||
+      !liveClass.isPublished ||
+      liveClass.status !== "scheduled"
+    ) {
+      registration.status = "cancelled";
+      registration.encryptedJoinUrl = null;
+      registration.lastError = "Registration is no longer eligible for retry.";
+      await registration.save();
+      summary.skipped += 1;
+      continue;
+    }
+
+    summary.attempted += 1;
+
+    try {
+      await ensureStudentZoomRegistration({ student, liveClass });
+      summary.succeeded += 1;
+    } catch {
+      summary.failed += 1;
+    }
+  }
+
+  return summary;
+};
+
+export const retryPendingZoomRevocations = async ({ limit = 20 } = {}) => {
+  const registrations = await ZoomRegistration.find({
+    revocationRequired: true,
+  })
+    .select("+zoomMeetingId +encryptedJoinUrl")
+    .sort({ updatedAt: 1 })
+    .limit(limit);
+  const summary = { attempted: 0, succeeded: 0, failed: 0 };
+
+  for (const registration of registrations) {
+    summary.attempted += 1;
+
+    try {
+      await revokeZoomRegistration(registration);
+      summary.succeeded += 1;
+    } catch (error) {
+      registration.lastError = String(
+        error.message || "Zoom access revocation failed."
+      ).slice(0, 1000);
+      registration.revocationRequired = true;
+      await registration.save().catch(() => {});
+      summary.failed += 1;
+    }
+  }
+
+  return summary;
+};

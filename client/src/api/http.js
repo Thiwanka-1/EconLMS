@@ -91,18 +91,48 @@ const performFetch = async (
   path,
   options
 ) => {
+  const timeoutController = new AbortController();
+  const timeoutMilliseconds = Math.max(
+    Number(import.meta.env.VITE_API_TIMEOUT_MS || 30000) || 30000,
+    5000
+  );
+  const timeoutId = window.setTimeout(() => {
+    timeoutController.abort("timeout");
+  }, timeoutMilliseconds);
+  const suppliedSignal = options?.signal;
+  const abortFromSuppliedSignal = () => {
+    timeoutController.abort(suppliedSignal.reason);
+  };
+
+  if (suppliedSignal) {
+    if (suppliedSignal.aborted) {
+      abortFromSuppliedSignal();
+    } else {
+      suppliedSignal.addEventListener("abort", abortFromSuppliedSignal, {
+        once: true,
+      });
+    }
+  }
+
   try {
     return await fetch(
       `${API_BASE_URL}${path}`,
       {
         credentials: "include",
         ...options,
+        signal: timeoutController.signal,
       }
     );
   } catch (error) {
     if (
       error.name === "AbortError"
     ) {
+      if (!suppliedSignal?.aborted) {
+        throw new ApiError("The request timed out. Please try again.", {
+          details: error,
+        });
+      }
+
       throw error;
     }
 
@@ -112,6 +142,9 @@ const performFetch = async (
         details: error,
       }
     );
+  } finally {
+    window.clearTimeout(timeoutId);
+    suppliedSignal?.removeEventListener("abort", abortFromSuppliedSignal);
   }
 };
 

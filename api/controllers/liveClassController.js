@@ -607,11 +607,15 @@ export const joinLiveClass =
     const liveClass =
       await LiveClass.findById(
         req.params.id
-      ).select("+zoomMeetingId");
+      )
+        .select("+zoomMeetingId")
+        .populate("course", "isPublished isArchived");
 
     if (
       !liveClass ||
       !liveClass.isPublished ||
+      !liveClass.course?.isPublished ||
+      liveClass.course?.isArchived ||
       liveClass.status !==
         "scheduled"
     ) {

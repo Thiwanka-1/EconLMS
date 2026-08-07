@@ -7,6 +7,7 @@ import {
 
 import {
   Link,
+  useNavigate,
   useParams,
 } from "react-router";
 
@@ -23,6 +24,7 @@ import {
 } from "../../api/playbackAdminApi.js";
 
 import {
+  deleteAdminStudent,
   getAdminUser,
   setAdminUserStatus,
 } from "../../api/userAdminApi.js";
@@ -42,6 +44,8 @@ export default function AdminStudentPage() {
   const {
     studentId,
   } = useParams();
+
+  const navigate = useNavigate();
 
   const [student, setStudent] =
     useState(null);
@@ -208,6 +212,31 @@ export default function AdminStudentPage() {
         setBusyAction("");
       }
     };
+
+  const deleteStudent = async () => {
+    const confirmation = window.prompt(
+      `Permanently delete this student and all related enrolments, payments, files, notifications, playback records and Zoom registrations?\n\nEnter ${student.email} to confirm.`
+    );
+
+    if (confirmation === null) {
+      return;
+    }
+
+    setBusyAction("delete-account");
+    setError("");
+    setSuccess("");
+
+    try {
+      await deleteAdminStudent(studentId, confirmation);
+      navigate("/admin/students", {
+        replace: true,
+        state: { message: "Student account and related data were permanently deleted." },
+      });
+    } catch (requestError) {
+      setError(requestError.message || "Student account could not be deleted.");
+      setBusyAction("");
+    }
+  };
 
   const decideNic =
     async (status) => {
@@ -398,37 +427,38 @@ export default function AdminStudentPage() {
           title={`${student.firstName} ${student.lastName}`}
           description={student.email}
           action={
-            <button
-              type="button"
-              disabled={
-                busyAction ===
-                "account"
-              }
-              onClick={() => {
-                const action =
-                  student.isActive
-                    ? "disable"
-                    : "enable";
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={Boolean(busyAction)}
+                onClick={() => {
+                  const action = student.isActive ? "disable" : "enable";
 
-                if (
-                  window.confirm(
-                    `${action} this student account?`
-                  )
-                ) {
-                  void toggleAccount();
-                }
-              }}
-              className={[
-                "rounded-2xl px-6 py-3 text-sm font-black disabled:opacity-50",
-                student.isActive
-                  ? "bg-red-600 text-white"
-                  : "bg-emerald-600 text-white",
-              ].join(" ")}
-            >
-              {student.isActive
-                ? "Disable account"
-                : "Enable account"}
-            </button>
+                  if (window.confirm(`${action} this student account?`)) {
+                    void toggleAccount();
+                  }
+                }}
+                className={[
+                  "rounded-2xl px-6 py-3 text-sm font-black disabled:opacity-50",
+                  student.isActive
+                    ? "bg-amber-600 text-white"
+                    : "bg-emerald-600 text-white",
+                ].join(" ")}
+              >
+                {student.isActive ? "Disable account" : "Enable account"}
+              </button>
+
+              {!student.isActive && (
+                <button
+                  type="button"
+                  disabled={Boolean(busyAction)}
+                  onClick={() => void deleteStudent()}
+                  className="rounded-2xl bg-red-700 px-6 py-3 text-sm font-black text-white disabled:opacity-50"
+                >
+                  {busyAction === "delete-account" ? "Deleting…" : "Delete permanently"}
+                </button>
+              )}
+            </div>
           }
         />
       </div>

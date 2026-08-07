@@ -1,0 +1,26 @@
+[Unit]
+Description=EconLMS API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=econlms
+Group=econlms
+WorkingDirectory=/opt/econlms/api
+EnvironmentFile=/etc/econlms/api.env
+ExecStart=/usr/bin/node index.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+# Run exactly one API process. Database job leases prevent accidental duplicate
+# scheduler execution, but a single process is the intended free-VM setup.
+
+[Install]
+WantedBy=multi-user.target

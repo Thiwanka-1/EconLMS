@@ -1,12 +1,12 @@
 import express from "express";
 import {
   createAdminUser,
-  deleteUser,
   getAllUsers,
   getUserById,
   setUserStatus,
   updateUser,
 } from "../controllers/userController.js";
+import { deleteStudentPermanently } from "../controllers/cleanupController.js";
 import {
   authorize,
   protect,
@@ -39,7 +39,7 @@ router.delete(
   "/:id",
   validateObjectId,
   authorize("admin"),
-  deleteUser
+  deleteStudentPermanently
 );
 
 export default router;

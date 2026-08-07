@@ -86,6 +86,11 @@ const zoomRegistrationSchema =
         type: Date,
         default: null,
       },
+
+      revocationRequired: {
+        type: Boolean,
+        default: false,
+      },
     },
     {
       timestamps: true,
@@ -116,6 +121,11 @@ zoomRegistrationSchema.index({
   student: 1,
   course: 1,
   status: 1,
+});
+
+zoomRegistrationSchema.index({
+  revocationRequired: 1,
+  updatedAt: 1,
 });
 
 const ZoomRegistration =

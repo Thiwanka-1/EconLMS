@@ -87,3 +87,10 @@ export const updateAdminLiveClassStatus = ({
     }
   );
 };
+
+export const deleteAdminLiveClass = (liveClassId, confirmation) => {
+  return apiRequest(`/live-classes/admin/${encodeURIComponent(liveClassId)}`, {
+    method: "DELETE",
+    body: { confirmation },
+  });
+};

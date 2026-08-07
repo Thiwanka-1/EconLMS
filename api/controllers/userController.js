@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import ZoomRegistration from "../models/ZoomRegistration.js";
+import { revokeZoomRegistrations } from "../services/zoomRegistrationService.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
@@ -408,7 +409,15 @@ export const setUserStatus = asyncHandler(async (req, res) => {
     await ensureAnotherActiveAdminExists(user);
   }
 
+  let zoomRevocation = null;
+
   if (user.isActive !== isActive) {
+    if (!isActive && user.role === "student") {
+      zoomRevocation = await revokeZoomRegistrations({
+        studentId: user._id,
+      });
+    }
+
     user.isActive = isActive;
 
     /*
@@ -425,14 +434,10 @@ export const setUserStatus = asyncHandler(async (req, res) => {
     success: true,
     message: isActive
       ? "User account enabled successfully."
-      : "User account disabled successfully.",
+      : zoomRevocation?.failureCount > 0
+        ? `User account disabled. ${zoomRevocation.failureCount} Zoom revocation(s) are queued for automatic retry.`
+        : "User account disabled successfully.",
     user,
+    zoomRevocation,
   });
-});
-
-export const deleteUser = asyncHandler(async (req, res) => {
-  throw new HttpError(
-    405,
-    "Permanent user deletion is disabled. Deactivate the account instead."
-  );
 });
