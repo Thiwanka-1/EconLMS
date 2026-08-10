@@ -259,16 +259,6 @@ export default function StudentCoursePage() {
     relevantPayments[0] ||
     null;
 
-  const paymentDeadlinePassed =
-    Boolean(
-      billingPeriod
-        ?.paymentDeadline &&
-        new Date() >
-          new Date(
-            billingPeriod.paymentDeadline
-          )
-    );
-
   const monthlyPaymentOpen =
     course?.paymentPlan !==
       "monthly" ||
@@ -276,23 +266,25 @@ export default function StudentCoursePage() {
       billingPeriod &&
         billingPeriod.isPublished &&
         billingPeriod.isPaymentOpen &&
-        !billingPeriod.isArchived &&
-        !paymentDeadlinePassed
+        !billingPeriod.isArchived
     );
 
   const enrollmentBlocked =
-    [
-      "suspended",
-      "cancelled",
-    ].includes(
-      access?.enrollmentStatus
-    );
+    access?.enrollmentStatus === "cancelled" ||
+    (course?.paymentPlan !== "monthly" &&
+      access?.enrollmentStatus === "suspended");
+
+  const paymentAlreadyGrantsTargetAccess =
+    course?.paymentPlan === "monthly"
+      ? access?.hasCurrentMonthApproval
+      : access?.hasAccess;
 
   const canUpload =
     Boolean(
       course &&
-        course.isEnrollmentOpen &&
-        !access?.hasAccess &&
+        (course.isEnrollmentOpen ||
+          access?.enrollmentStatus !== "not_enrolled") &&
+        !paymentAlreadyGrantsTargetAccess &&
         !pendingPayment &&
         !enrollmentBlocked &&
         monthlyPaymentOpen

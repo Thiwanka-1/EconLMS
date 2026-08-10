@@ -3,6 +3,7 @@ import BillingPeriod from "../models/BillingPeriod.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
 import {
+  getMonthCycle,
   getOrCreateCurrentBillingPeriod,
 } from "../utils/billingPeriod.js";
 
@@ -39,9 +40,6 @@ export const createBillingPeriod =
       label,
       amount,
       currency,
-      accessStartsAt,
-      accessEndsAt,
-      paymentDeadline,
       isPublished,
       isPaymentOpen,
     } = req.body;
@@ -50,13 +48,11 @@ export const createBillingPeriod =
       !courseId ||
       year === undefined ||
       month === undefined ||
-      amount === undefined ||
-      !accessStartsAt ||
-      !accessEndsAt
+      amount === undefined
     ) {
       throw new HttpError(
         400,
-        "Course, year, month, amount, access start and access end are required."
+        "Course, year, month and amount are required."
       );
     }
 
@@ -76,6 +72,8 @@ export const createBillingPeriod =
       );
     }
 
+    const cycle = getMonthCycle(Number(year), Number(month));
+
     const billingPeriod =
       await BillingPeriod.create({
         course: courseId,
@@ -84,10 +82,9 @@ export const createBillingPeriod =
         label,
         amount: Number(amount),
         currency: currency || "LKR",
-        accessStartsAt,
-        accessEndsAt,
-        paymentDeadline:
-          paymentDeadline || null,
+        accessStartsAt: cycle.accessStartsAt,
+        accessEndsAt: cycle.accessEndsAt,
+        paymentDeadline: cycle.paymentDeadline,
 
         isPublished:
           typeof isPublished === "boolean"
@@ -238,9 +235,6 @@ export const updateBillingPeriod =
       "month",
       "label",
       "currency",
-      "accessStartsAt",
-      "accessEndsAt",
-      "paymentDeadline",
     ];
 
     for (const field of editableFields) {
@@ -267,6 +261,12 @@ export const updateBillingPeriod =
 
       billingPeriod.amount = amount;
     }
+
+    const cycle = getMonthCycle(billingPeriod.year, billingPeriod.month);
+    billingPeriod.label = req.body.label || cycle.label;
+    billingPeriod.accessStartsAt = cycle.accessStartsAt;
+    billingPeriod.accessEndsAt = cycle.accessEndsAt;
+    billingPeriod.paymentDeadline = cycle.paymentDeadline;
 
     billingPeriod.updatedBy =
       req.user._id;

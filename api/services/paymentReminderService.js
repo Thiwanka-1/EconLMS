@@ -11,6 +11,7 @@ import {
 import {
   createUserNotification,
 } from "./notificationService.js";
+import { getBillingReferenceDate } from "../utils/billingPeriod.js";
 
 const getTimezone = () => {
   return process.env.APP_TIMEZONE || "Asia/Colombo";
@@ -47,7 +48,7 @@ const getDaysUntilDeadline = (deadline, now) => {
 };
 
 export const sendDuePaymentReminders = async ({
-  now = new Date(),
+  now = getBillingReferenceDate(),
   source = "scheduled",
 } = {}) => {
   const reminderDays = getPaymentReminderDays();

@@ -1,13 +1,12 @@
 import Enrollment from "../models/Enrollment.js";
-
-const getDocumentId = (value) => {
-  return value?._id?.toString() || value?.toString() || null;
-};
+import { getMonthlyEnrollmentAccess } from "../services/monthlyAccessPolicyService.js";
 
 export const getStudentCourseAccess = async ({
   studentId,
   course,
   billingPeriod = null,
+  now = null,
+  allowCourseLevel = false,
 }) => {
   const enrollment = await Enrollment.findOne({
     student: studentId,
@@ -42,7 +41,7 @@ export const getStudentCourseAccess = async ({
     };
   }
 
-  if (!billingPeriod) {
+  if (!billingPeriod && !allowCourseLevel) {
     return {
       hasAccess: false,
       reason: "The requested course content does not have a billing period.",
@@ -50,19 +49,15 @@ export const getStudentCourseAccess = async ({
     };
   }
 
-  const billingPeriodId = getDocumentId(billingPeriod);
-
-  const approved =
-    Boolean(billingPeriodId) &&
-    enrollment.approvedBillingPeriods.some(
-      (approvedPeriod) => getDocumentId(approvedPeriod) === billingPeriodId
-    );
+  const monthlyAccess = await getMonthlyEnrollmentAccess({
+    enrollment,
+    course,
+    requestedBillingPeriod: billingPeriod,
+    now,
+  });
 
   return {
-    hasAccess: approved,
-    reason: approved
-      ? `Access approved for ${billingPeriod.label}.`
-      : `Payment approval is required for ${billingPeriod.label}.`,
+    ...monthlyAccess,
     enrollment,
   };
 };

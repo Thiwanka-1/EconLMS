@@ -86,6 +86,7 @@ const notificationSchema =
           "nic_submitted",
           "student_registered",
           "payment_reminder",
+          "course_access_suspended",
           "system",
         ],
         required: true,

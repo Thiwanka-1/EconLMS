@@ -379,6 +379,45 @@ export const createPaymentReminderEmail = ({
   };
 };
 
+export const createCourseAccessSuspendedEmail = ({
+  student,
+  courseTitle,
+  periodLabel,
+  actionUrl,
+}) => {
+  const studentName = getStudentName(student);
+  const subject = `Action required: ${courseTitle} access suspended`;
+  const text = [
+    `Hello ${studentName},`,
+    "",
+    `Your access to ${courseTitle} has been suspended because payment for ${periodLabel} was not approved by the end of the grace period.`,
+    "A late payment slip may still be uploaded. Access will return after an administrator approves it.",
+  ].join("\n");
+
+  return {
+    subject,
+    text,
+    html: createEmailLayout({
+      previewText: `Payment is required to restore ${courseTitle} access.`,
+      heading: "Course access suspended",
+      bodyHtml: `
+        <p>Hello ${escapeHtml(studentName)},</p>
+        <p>
+          Your access to <strong>${escapeHtml(courseTitle)}</strong> has been
+          suspended because payment for ${escapeHtml(periodLabel)} was not
+          approved by the end of the grace period.
+        </p>
+        <p>
+          You may still upload a late payment slip. Access will return after
+          an administrator approves it.
+        </p>
+      `,
+      actionUrl,
+      actionText: "Open payments",
+    }),
+  };
+};
+
 export const createPaymentSubmittedEmail = ({
   student,
   courseTitle,

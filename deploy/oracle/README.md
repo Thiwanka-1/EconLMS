@@ -29,6 +29,11 @@ The MongoDB deployment must be a replica set (MongoDB Atlas is suitable),
 because payment approval/rejection uses transactions to prevent inconsistent
 payment and enrolment state.
 
+Monthly billing periods are generated on the first day of each month. A daily
+00:00:05 Asia/Colombo job suspends unpaid monthly enrolments after the 10-day grace
+period and queues Zoom revocation. The same enforcement also runs at API startup,
+so Oracle VM maintenance or downtime cannot permanently skip the deadline.
+
 ## API production environment
 
 Copy every required value from `api/.env.example`. For a single-domain Oracle
@@ -44,6 +49,8 @@ CLIENT_ORIGINS=https://lms.example.com
 COOKIE_SECURE=true
 COOKIE_SAME_SITE=lax
 ```
+
+Do not set `TEST_BILLING_DATE` or enable `BILLING_CRON_TEST_MODE` in production.
 
 Keep `/etc/econlms/api.env` readable only by root and the `econlms` service
 group. Test outbound SMTP connectivity on port 465 or 587 before launch.

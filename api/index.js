@@ -12,13 +12,16 @@ import asyncHandler from "./utils/asyncHandler.js";
 
 import {
   runBillingGenerationOnStartup,
+  runMonthlyAccessEnforcementOnStartup,
   runPaymentRemindersOnStartup,
   runBackgroundMaintenanceOnStartup,
   scheduleBackgroundMaintenance,
   scheduleMonthlyBillingGeneration,
+  scheduleMonthlyAccessEnforcement,
   schedulePaymentReminders,
   shutdownScheduledJobs,
   triggerMonthlyBillingGenerationNow,
+  triggerMonthlyAccessEnforcementNow,
 } from "./utils/scheduledJobs.js";
 
 import {
@@ -247,6 +250,21 @@ app.post(
   })
 );
 
+app.post(
+  "/api/admin/trigger-monthly-access-enforcement",
+  protect,
+  authorize("admin"),
+  asyncHandler(async (req, res) => {
+    const result = await triggerMonthlyAccessEnforcementNow();
+
+    res.status(200).json({
+      success: result.success !== false,
+      message: "Monthly access enforcement completed.",
+      data: result,
+    });
+  })
+);
+
 /*
  * API routes
  */
@@ -328,6 +346,7 @@ app.use(errorHandler);
 
 let server = null;
 let monthlyBillingJob = null;
+let monthlyAccessEnforcementJob = null;
 let paymentReminderJob = null;
 let backgroundMaintenanceJob = null;
 
@@ -392,6 +411,21 @@ const startServer = async () => {
       console.error(
         "[PAYMENT_REMINDER] Initialization failed:",
         error.message,
+      );
+    }
+
+    try {
+      monthlyAccessEnforcementJob = scheduleMonthlyAccessEnforcement();
+      void runMonthlyAccessEnforcementOnStartup().catch((error) => {
+        console.error(
+          "[MONTHLY_ACCESS] Startup enforcement failed:",
+          error.message
+        );
+      });
+    } catch (error) {
+      console.error(
+        "[MONTHLY_ACCESS] Initialization failed:",
+        error.message
       );
     }
 

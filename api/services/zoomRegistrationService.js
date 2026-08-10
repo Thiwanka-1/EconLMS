@@ -22,6 +22,7 @@ import {
 } from "../utils/encryption.js";
 
 import HttpError from "../utils/HttpError.js";
+import { getStudentCourseAccess } from "../utils/courseAccess.js";
 
 const getDocumentId = (value) => {
   return value?._id?.toString() || value?.toString() || null;
@@ -64,76 +65,20 @@ export const checkStudentLiveClassAccess =
   async ({
     studentId,
     liveClass,
+    now = null,
   }) => {
     const courseId =
       getDocumentId(liveClass.course);
 
-    const enrollment =
-      await Enrollment.findOne({
-        student: studentId,
-        course: courseId,
-      });
-
-    if (!enrollment) {
-      return {
-        hasAccess: false,
-        reason:
-          "You are not enrolled in this course.",
-        enrollment: null,
-      };
-    }
-
-    if (enrollment.status !== "active") {
-      return {
-        hasAccess: false,
-        reason: `Your enrolment is ${enrollment.status}.`,
-        enrollment,
-      };
-    }
-
-    if (
-      liveClass.paymentPlan ===
-      "one_time"
-    ) {
-      const hasAccess = Boolean(
-        enrollment.oneTimeAccessGrantedAt
-      );
-
-      return {
-        hasAccess,
-        reason: hasAccess
-          ? "Course access is active."
-          : "The course payment has not been approved.",
-        enrollment,
-      };
-    }
-
-    const billingPeriodId = getDocumentId(liveClass.billingPeriod);
-
-    if (!billingPeriodId) {
-      return {
-        hasAccess: false,
-        reason: "This monthly live class does not have a billing period.",
-        enrollment,
-      };
-    }
-
-    const approved =
-      enrollment.approvedBillingPeriods.some(
-        (period) =>
-          getDocumentId(period) ===
-          billingPeriodId
-      );
-
-    return {
-      hasAccess: approved,
-
-      reason: approved
-        ? "Payment access is approved for this live class."
-        : "Payment approval is required for this live class.",
-
-      enrollment,
-    };
+    return getStudentCourseAccess({
+      studentId,
+      course: {
+        _id: courseId,
+        paymentPlan: liveClass.paymentPlan,
+      },
+      billingPeriod: liveClass.billingPeriod,
+      now,
+    });
   };
 
 export const ensureStudentZoomRegistration =
@@ -396,13 +341,9 @@ export const syncLiveClassRegistrations =
     };
 
     if (
-      liveClass.paymentPlan ===
+      liveClass.paymentPlan !==
       "monthly"
     ) {
-      enrollmentFilter
-        .approvedBillingPeriods =
-        liveClass.billingPeriod;
-    } else {
       enrollmentFilter
         .oneTimeAccessGrantedAt = {
         $ne: null,

@@ -11,6 +11,9 @@ import {
   approvePaymentAtomically,
   rejectPaymentAtomically,
 } from "../services/paymentDecisionService.js";
+import {
+  enforceSingleMonthlyEnrollmentAccess,
+} from "../services/monthlyAccessEnforcementService.js";
 
 export const getMyPaymentSubmissions =
   asyncHandler(async (req, res) => {
@@ -260,25 +263,47 @@ export const approvePayment =
       });
     }
 
-    //new zoom logic
-    const zoomRegistrationSync = {
-      queued: true,
-      message: "Eligible Zoom registrations are being synchronized in the background.",
-    };
+    let monthlyAccessEnforcement = null;
 
-    setImmediate(() => {
-      void registerStudentForEligibleLiveClasses({
-        studentId: payment.student,
-        courseId: payment.course,
-        billingPeriodId:
-          payment.paymentPlan === "monthly" ? payment.billingPeriod : null,
-      }).catch((error) => {
+    if (payment.paymentPlan === "monthly") {
+      try {
+        monthlyAccessEnforcement = await enforceSingleMonthlyEnrollmentAccess({
+          enrollmentId: payment.enrollment,
+          source: "payment-approval",
+        });
+      } catch (error) {
         console.error(
-          "Zoom registration sync failed after payment approval:",
+          "Monthly access enforcement failed after payment approval:",
           error.message
         );
+      }
+    }
+
+    const zoomRegistrationSync = monthlyAccessEnforcement?.suspended
+      ? {
+          queued: false,
+          message: "Zoom registration was not queued because a newer monthly payment is required.",
+        }
+      : {
+          queued: true,
+          message: "Eligible Zoom registrations are being synchronized in the background.",
+        };
+
+    if (zoomRegistrationSync.queued) {
+      setImmediate(() => {
+        void registerStudentForEligibleLiveClasses({
+          studentId: payment.student,
+          courseId: payment.course,
+          billingPeriodId:
+            payment.paymentPlan === "monthly" ? payment.billingPeriod : null,
+        }).catch((error) => {
+          console.error(
+            "Zoom registration sync failed after payment approval:",
+            error.message
+          );
+        });
       });
-    });
+    }
 
 let notificationResult = { success: false };
 
@@ -299,12 +324,15 @@ let notificationResult = { success: false };
       success: true,
 
       message:
-        "Payment approved and course access granted.",
+        monthlyAccessEnforcement?.suspended
+          ? "Payment approved, but a newer monthly payment is required to restore course access."
+          : "Payment approved and course access granted.",
 
       paymentSubmission: payment,
       enrollment,
 
       zoomRegistrationSync,
+      monthlyAccessEnforcement,
       notifications: {
         processed: Boolean(notificationResult?.success),
       },
@@ -340,6 +368,21 @@ export const rejectPayment =
 
     const rejectionReason = payment.reviewNote;
     let notificationResult = { success: false };
+    let monthlyAccessEnforcement = null;
+
+    if (payment.paymentPlan === "monthly") {
+      try {
+        monthlyAccessEnforcement = await enforceSingleMonthlyEnrollmentAccess({
+          enrollmentId: payment.enrollment,
+          source: "payment-rejection",
+        });
+      } catch (error) {
+        console.error(
+          "Monthly access enforcement failed after payment rejection:",
+          error.message
+        );
+      }
+    }
 
     try {
       notificationResult = await processPaymentDecisionSideEffects({
@@ -364,5 +407,6 @@ export const rejectPayment =
       notifications: {
         processed: Boolean(notificationResult?.success),
       },
+      monthlyAccessEnforcement,
     });
   });

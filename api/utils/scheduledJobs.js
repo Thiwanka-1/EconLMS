@@ -2,7 +2,9 @@ import schedule from "node-schedule";
 
 import Course from "../models/Course.js";
 import {
+  getBillingReferenceDate,
   getOrCreateCurrentBillingPeriod,
+  synchronizeCourseBillingPeriodDates,
 } from "./billingPeriod.js";
 
 import {
@@ -14,6 +16,9 @@ import {
   retryPendingZoomRevocations,
 } from "../services/zoomRegistrationService.js";
 import { runWithJobLease } from "./jobLease.js";
+import {
+  enforceMonthlyEnrollmentAccess,
+} from "../services/monthlyAccessEnforcementService.js";
 
 const getApplicationTimezone = () => {
   return process.env.APP_TIMEZONE || "Asia/Colombo";
@@ -53,6 +58,7 @@ const runMonthlyBillingGeneration = async ({
     try {
       const billingPeriod =
         await getOrCreateCurrentBillingPeriod(course);
+      await synchronizeCourseBillingPeriodDates(course._id);
 
       successCount += 1;
 
@@ -281,6 +287,62 @@ export const runPaymentRemindersOnStartup = async () => {
     () => sendDuePaymentReminders({ source: "startup" }),
     { leaseMilliseconds: 30 * 60 * 1000 }
   );
+};
+
+const runMonthlyAccessEnforcement = async ({ source = "scheduled" } = {}) => {
+  return runWithJobLease(
+    "monthly-access-enforcement",
+    () =>
+      enforceMonthlyEnrollmentAccess({
+        now: getBillingReferenceDate(),
+        source,
+      }),
+    { leaseMilliseconds: 30 * 60 * 1000 }
+  );
+};
+
+export const scheduleMonthlyAccessEnforcement = () => {
+  const timezone = getApplicationTimezone();
+  const rule = new schedule.RecurrenceRule();
+  rule.tz = timezone;
+
+  const testMode =
+    process.env.NODE_ENV === "development" &&
+    process.env.BILLING_CRON_TEST_MODE === "true";
+
+  if (testMode) {
+    rule.second = 15;
+    console.log(
+      "[MONTHLY_ACCESS] TEST MODE enabled: access enforcement runs every minute."
+    );
+  } else {
+    rule.hour = 0;
+    rule.minute = 0;
+    rule.second = 5;
+  }
+
+  const job = schedule.scheduleJob(rule, () => {
+    void runMonthlyAccessEnforcement({ source: "scheduled" }).catch((error) => {
+      console.error("[MONTHLY_ACCESS] Scheduled job failed:", error.message);
+    });
+  });
+
+  if (!job) {
+    throw new Error("Monthly access enforcement job could not be scheduled.");
+  }
+
+  console.log(
+    `[MONTHLY_ACCESS] Scheduled daily at 00:00:05 in ${timezone}.`
+  );
+  return job;
+};
+
+export const runMonthlyAccessEnforcementOnStartup = () => {
+  return runMonthlyAccessEnforcement({ source: "startup" });
+};
+
+export const triggerMonthlyAccessEnforcementNow = () => {
+  return runMonthlyAccessEnforcement({ source: "manual" });
 };
 
 const runBackgroundMaintenance = async () => {

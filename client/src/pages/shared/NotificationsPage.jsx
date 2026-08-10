@@ -69,6 +69,10 @@ const notificationTypes = [
     label: "Payment reminder",
   },
   {
+    value: "course_access_suspended",
+    label: "Course access suspended",
+  },
+  {
     value: "system",
     label: "System",
   },
@@ -112,6 +116,7 @@ const getNotificationActionUrl = ({ notification, role }) => {
         "payment_rejected",
         "payment_submitted",
         "payment_reminder",
+        "course_access_suspended",
       ].includes(type)
     ) {
       return "/student/payments";

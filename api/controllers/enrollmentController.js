@@ -6,6 +6,7 @@ import PaymentSubmission from "../models/PaymentSubmission.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/HttpError.js";
 import {
+  getBillingReferenceDate,
   getOrCreateCurrentBillingPeriod,
 } from "../utils/billingPeriod.js";
 
@@ -25,6 +26,8 @@ import {
 import {
   revokeZoomRegistrations,
 } from "../services/zoomRegistrationService.js";
+import { getStudentCourseAccess } from "../utils/courseAccess.js";
+import { getMonthlyEnrollmentAccess } from "../services/monthlyAccessPolicyService.js";
 
 const getOrCreateEnrollment = async ({
   student,
@@ -99,7 +102,12 @@ export const submitPaymentSlip =
       );
     }
 
-    if (!course.isEnrollmentOpen) {
+    const existingEnrollment = await Enrollment.findOne({
+      student: req.user._id,
+      course: course._id,
+    });
+
+    if (!course.isEnrollmentOpen && !existingEnrollment) {
       throw new HttpError(
         400,
         "Course enrolment is currently closed."
@@ -125,17 +133,6 @@ export const submitPaymentSlip =
     );
   }
 
-  const now = new Date();
-
-  if (
-    billingPeriod.paymentDeadline &&
-    now > billingPeriod.paymentDeadline
-  ) {
-    throw new HttpError(
-      400,
-      "The payment deadline for this month has passed."
-    );
-  }
 } else if (req.body.billingPeriodId) {
   throw new HttpError(
     400,
@@ -143,17 +140,15 @@ export const submitPaymentSlip =
   );
 }
 
-    const enrollment =
+    const enrollment = existingEnrollment ||
       await getOrCreateEnrollment({
         student: req.user._id,
         course,
       });
 
     if (
-      enrollment.status ===
-        "suspended" ||
-      enrollment.status ===
-        "cancelled"
+      enrollment.status === "cancelled" ||
+      (enrollment.status === "suspended" && course.paymentPlan !== "monthly")
     ) {
       throw new HttpError(
         403,
@@ -246,6 +241,8 @@ export const submitPaymentSlip =
 
           attemptNumber:
             previousAttempts + 1,
+
+          submittedAt: getBillingReferenceDate(),
 
           driveFileId:
             uploadedDriveFile.id,
@@ -557,6 +554,20 @@ export const setEnrollmentStatus =
       );
     }
 
+    if (status === "active" && enrollment.paymentPlan === "monthly") {
+      const course = await Course.findById(enrollment.course);
+      const monthlyAccess = course
+        ? await getMonthlyEnrollmentAccess({ enrollment, course })
+        : null;
+
+      if (!monthlyAccess?.hasCurrentStanding) {
+        throw new HttpError(
+          400,
+          "This monthly enrolment cannot be activated until the current payment is approved."
+        );
+      }
+    }
+
     enrollment.status = status;
     enrollment.statusReason =
       reason || "";
@@ -607,7 +618,7 @@ export const setEnrollmentStatus =
     });
   });
 
-  export const getMyCourseAccess =
+export const getMyCourseAccess =
   asyncHandler(async (req, res) => {
     const course = await Course.findById(
       req.params.courseId
@@ -624,78 +635,31 @@ export const setEnrollmentStatus =
       );
     }
 
-    const enrollment =
-      await Enrollment.findOne({
-        student: req.user._id,
-        course: course._id,
-      });
-
-    if (!enrollment) {
-      return res.status(200).json({
-        success: true,
-        hasAccess: false,
-        reason:
-          "You are not enrolled in this course.",
-        enrollmentStatus: "not_enrolled",
-        requiredBillingPeriod: null,
-      });
-    }
-
-    if (enrollment.status !== "active") {
-      return res.status(200).json({
-        success: true,
-        hasAccess: false,
-        reason: `Enrollment status is ${enrollment.status}.`,
-        enrollmentStatus:
-          enrollment.status,
-        requiredBillingPeriod: null,
-      });
-    }
-
-    if (
-      course.paymentPlan === "one_time"
-    ) {
-      const hasAccess = Boolean(
-        enrollment.oneTimeAccessGrantedAt
-      );
-
-      return res.status(200).json({
-        success: true,
-        hasAccess,
-        reason: hasAccess
-          ? "One-time course access is active."
-          : "One-time payment has not been approved.",
-        enrollmentStatus:
-          enrollment.status,
-        requiredBillingPeriod: null,
-      });
-    }
-
-    const currentBillingPeriod =
-      await getOrCreateCurrentBillingPeriod(
-        course
-      );
-
-    const hasCurrentMonthApproval =
-      enrollment.approvedBillingPeriods.some(
-        (periodId) =>
-          periodId.toString() ===
-          currentBillingPeriod._id.toString()
-      );
+    const currentBillingPeriod = course.paymentPlan === "monthly"
+      ? await getOrCreateCurrentBillingPeriod(course)
+      : null;
+    const access = await getStudentCourseAccess({
+      studentId: req.user._id,
+      course,
+      allowCourseLevel: true,
+    });
+    const hasCurrentMonthApproval = Boolean(
+      access.hasCurrentApproval ||
+      (currentBillingPeriod && access.enrollment?.approvedBillingPeriods.some(
+        (periodId) => periodId.toString() === currentBillingPeriod._id.toString()
+      ))
+    );
 
     res.status(200).json({
       success: true,
-      hasAccess:
-        hasCurrentMonthApproval,
-
-      reason: hasCurrentMonthApproval
-        ? `Access approved for ${currentBillingPeriod.label}.`
-        : `Payment approval is required for ${currentBillingPeriod.label}.`,
-
-      enrollmentStatus:
-        enrollment.status,
-
-      requiredBillingPeriod:
-        currentBillingPeriod,
+      hasAccess: access.hasAccess,
+      reason: access.reason,
+      accessSource: access.source || null,
+      hasCurrentMonthApproval,
+      hasPreviousMonthApproval: Boolean(access.hasPreviousApproval),
+      hasOnTimePendingPayment: Boolean(access.hasOnTimePendingPayment),
+      isWithinGracePeriod: Boolean(access.isWithinGracePeriod),
+      enrollmentStatus: access.enrollment?.status || "not_enrolled",
+      requiredBillingPeriod: currentBillingPeriod,
     });
   });

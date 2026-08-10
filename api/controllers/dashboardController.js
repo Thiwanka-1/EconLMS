@@ -271,7 +271,7 @@ export const getAdminDashboard =
             currentCycle.accessStartsAt,
 
           endDate:
-            currentCycle.accessEndsAt,
+            currentCycle.monthEndsAt,
         })
       ),
 

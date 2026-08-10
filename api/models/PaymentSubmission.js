@@ -56,6 +56,12 @@ const paymentSubmissionSchema =
         min: 1,
       },
 
+      submittedAt: {
+        type: Date,
+        default: Date.now,
+        required: true,
+      },
+
       driveFileId: {
         type: String,
         required: true,
@@ -172,6 +178,12 @@ paymentSubmissionSchema.index({
   student: 1,
   course: 1,
   createdAt: -1,
+});
+
+paymentSubmissionSchema.index({
+  billingPeriod: 1,
+  status: 1,
+  submittedAt: 1,
 });
 
 const PaymentSubmission =

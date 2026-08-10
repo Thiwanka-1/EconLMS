@@ -167,7 +167,17 @@ const createDefaultPeriodForm =
       new Date(
         year,
         month,
-        0,
+        10,
+        23,
+        59,
+        59
+      );
+
+    const paymentDeadline =
+      new Date(
+        year,
+        month - 1,
+        10,
         23,
         59,
         59
@@ -211,7 +221,7 @@ const createDefaultPeriodForm =
 
       paymentDeadline:
         toDateTimeLocal(
-          accessEnd
+          paymentDeadline
         ),
 
       isPublished: false,
@@ -1280,7 +1290,8 @@ export default function AdminCoursePage() {
                 onChange={
                   handlePeriodChange
                 }
-                required
+                disabled
+                helpText="Fixed automatically to the first day of the billing month."
               />
 
               <FormField
@@ -1293,7 +1304,8 @@ export default function AdminCoursePage() {
                 onChange={
                   handlePeriodChange
                 }
-                required
+                disabled
+                helpText="Fixed automatically to the end of the 10th day of the following month."
               />
 
               <FormField
@@ -1306,6 +1318,8 @@ export default function AdminCoursePage() {
                 onChange={
                   handlePeriodChange
                 }
+                disabled
+                helpText="Fixed automatically to the end of the 10th day of this billing month."
               />
             </div>
 
