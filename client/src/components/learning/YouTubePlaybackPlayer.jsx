@@ -16,6 +16,13 @@ import { useAuth } from "../../auth/useAuth.js";
 
 import { loadYouTubeIframeApi } from "../../utils/youtubeApi.js";
 import { setStoredPlaybackProgress } from "../../utils/playbackSessionStorage.js";
+import {
+  getPlaybackRewindAvailable,
+  getPlaybackRewindFloor,
+  getPlaybackRewindTarget,
+  PLAYBACK_REWIND_LIMIT_SECONDS,
+  resolvePlaybackRewindLock,
+} from "../../utils/playbackRewind.js";
 
 import StatusMessage from "../common/StatusMessage.jsx";
 
@@ -142,17 +149,28 @@ export default function YouTubePlaybackPlayer({
     playbackSession.playback?.activeSession?.watchedSeconds || 0,
   );
 
+  const initialCurrentPositionSeconds = Number(
+    playbackSession.playback?.activeSession?.currentPositionSeconds ??
+      initialWatchedSeconds,
+  );
+
   const initialDurationSeconds = Number(
     playbackSession.playback?.activeSession?.durationSeconds || 0,
   );
+
+  const initialRewindLockedUntilSeconds =
+    playbackSession.playback?.activeSession?.rewindLockedUntilSeconds ?? null;
 
   const playerRef = useRef(null);
   const fullscreenContainerRef = useRef(null);
   const closedRef = useRef(false);
   const heartbeatInFlightRef = useRef(false);
   const endingPromiseRef = useRef(null);
-  const watchedSecondsRef = useRef(initialWatchedSeconds);
+  const currentPositionSecondsRef = useRef(initialCurrentPositionSeconds);
   const furthestWatchedSecondsRef = useRef(initialWatchedSeconds);
+  const rewindLockedUntilSecondsRef = useRef(
+    initialRewindLockedUntilSeconds,
+  );
   const durationSecondsRef = useRef(initialDurationSeconds);
 
   const [isReady, setIsReady] = useState(false);
@@ -165,8 +183,15 @@ export default function YouTubePlaybackPlayer({
   const [playbackRate, setPlaybackRateState] = useState(1);
   const [availablePlaybackRates, setAvailablePlaybackRates] = useState([1]);
   const [error, setError] = useState("");
+  const [rewindNotice, setRewindNotice] = useState("");
   const [watchedSeconds, setWatchedSeconds] = useState(
     initialWatchedSeconds,
+  );
+  const [currentPositionSeconds, setCurrentPositionSeconds] = useState(
+    initialCurrentPositionSeconds,
+  );
+  const [rewindLockedUntilSeconds, setRewindLockedUntilSeconds] = useState(
+    initialRewindLockedUntilSeconds,
   );
   const [durationSeconds, setDurationSeconds] = useState(
     initialDurationSeconds,
@@ -199,7 +224,12 @@ export default function YouTubePlaybackPlayer({
     };
   }, [isReady]);
 
-  const updateStoredMetrics = useCallback(({ watched, duration }) => {
+  const updateStoredMetrics = useCallback(({
+    watched,
+    currentPosition,
+    duration,
+    rewindLockedUntil,
+  }) => {
     const nextWatchedSeconds = Math.max(
       furthestWatchedSecondsRef.current,
       Number(watched) || 0,
@@ -210,23 +240,52 @@ export default function YouTubePlaybackPlayer({
       Number(duration) || 0,
       0,
     );
+    const requestedCurrentPosition = Number(currentPosition);
+    const nextCurrentPositionSeconds = Number.isFinite(requestedCurrentPosition)
+      ? clamp(
+          requestedCurrentPosition,
+          0,
+          nextDurationSeconds > 0
+            ? nextDurationSeconds
+            : Number.MAX_SAFE_INTEGER,
+        )
+      : currentPositionSecondsRef.current;
+    const lockCandidate =
+      rewindLockedUntil === undefined
+        ? rewindLockedUntilSecondsRef.current
+        : rewindLockedUntil;
+    const nextRewindLockedUntilSeconds = resolvePlaybackRewindLock({
+      currentPositionSeconds: nextCurrentPositionSeconds,
+      furthestWatchedSeconds: nextWatchedSeconds,
+      existingLockSeconds: lockCandidate,
+    });
+    const wasRewindLocked = rewindLockedUntilSecondsRef.current !== null;
 
     furthestWatchedSecondsRef.current = nextWatchedSeconds;
-    watchedSecondsRef.current = nextWatchedSeconds;
+    currentPositionSecondsRef.current = nextCurrentPositionSeconds;
+    rewindLockedUntilSecondsRef.current = nextRewindLockedUntilSeconds;
     durationSecondsRef.current = nextDurationSeconds;
 
     setWatchedSeconds(nextWatchedSeconds);
+    setCurrentPositionSeconds(nextCurrentPositionSeconds);
+    setRewindLockedUntilSeconds(nextRewindLockedUntilSeconds);
     setDurationSeconds(nextDurationSeconds);
+
+    if (wasRewindLocked && nextRewindLockedUntilSeconds === null) {
+      setRewindNotice("");
+    }
 
     setStoredPlaybackProgress({
       lessonId: playbackSession.lesson._id,
       sessionId: playbackSession.sessionId,
       watchedSeconds: nextWatchedSeconds,
+      currentPositionSeconds: nextCurrentPositionSeconds,
+      rewindLockedUntilSeconds: nextRewindLockedUntilSeconds,
     });
   }, [playbackSession.lesson._id, playbackSession.sessionId]);
 
   const getPlayerMetrics = useCallback(() => {
-    let currentTime = watchedSecondsRef.current;
+    let currentTime = currentPositionSecondsRef.current;
     let duration = durationSecondsRef.current;
 
     try {
@@ -255,6 +314,7 @@ export default function YouTubePlaybackPlayer({
         furthestWatchedSecondsRef.current,
         0,
       ),
+      currentPosition: Math.max(currentTime, 0),
       duration: Math.max(duration, 0),
     };
   }, []);
@@ -285,15 +345,22 @@ export default function YouTubePlaybackPlayer({
       const result = await sendPlaybackHeartbeat({
         sessionId: playbackSession.sessionId,
         watchedSeconds: Math.floor(metrics.watched),
+        currentPositionSeconds: metrics.currentPosition,
+        rewindLockedUntilSeconds: rewindLockedUntilSecondsRef.current,
         durationSeconds: Math.floor(metrics.duration),
       });
+      const latestMetrics = getPlayerMetrics();
 
       updateStoredMetrics({
         watched: Number(
-          result.playback?.watchedSeconds ?? metrics.watched,
+          result.playback?.watchedSeconds ?? latestMetrics.watched,
         ),
+        currentPosition: latestMetrics.currentPosition,
+        rewindLockedUntil:
+          result.playback?.rewindLockedUntilSeconds ??
+          rewindLockedUntilSecondsRef.current,
         duration: Number(
-          result.playback?.durationSeconds ?? metrics.duration,
+          result.playback?.durationSeconds ?? latestMetrics.duration,
         ),
       });
 
@@ -406,7 +473,7 @@ export default function YouTubePlaybackPlayer({
     }
   }, [isReady]);
 
-  const seekBy = useCallback(
+  const seekForwardBy = useCallback(
     (seconds) => {
       if (!isReady || closedRef.current) {
         return;
@@ -415,8 +482,9 @@ export default function YouTubePlaybackPlayer({
       try {
         const forwardSeconds = Math.max(Number(seconds) || 0, 0);
         const current = Math.max(
-          Number(playerRef.current?.getCurrentTime?.()) || 0,
-          furthestWatchedSecondsRef.current,
+          Number(playerRef.current?.getCurrentTime?.()) ||
+            currentPositionSecondsRef.current,
+          0,
         );
         const duration = Number(playerRef.current?.getDuration?.()) || 0;
         const nextTime =
@@ -426,15 +494,74 @@ export default function YouTubePlaybackPlayer({
 
         playerRef.current?.seekTo?.(nextTime, true);
         updateStoredMetrics({
-          watched: nextTime,
+          watched: Math.max(nextTime, furthestWatchedSecondsRef.current),
+          currentPosition: nextTime,
           duration,
         });
+        setRewindNotice("");
       } catch {
         setError("The video position could not be changed.");
       }
     },
     [isReady, updateStoredMetrics],
   );
+
+  const rewindTenSeconds = useCallback(() => {
+    if (!isReady || closedRef.current) {
+      return;
+    }
+
+    try {
+      const playerCurrentTime = Number(playerRef.current?.getCurrentTime?.());
+      const current = Number.isFinite(playerCurrentTime)
+        ? Math.max(playerCurrentTime, 0)
+        : currentPositionSecondsRef.current;
+      const existingLock = resolvePlaybackRewindLock({
+        currentPositionSeconds: current,
+        furthestWatchedSeconds: furthestWatchedSecondsRef.current,
+        existingLockSeconds: rewindLockedUntilSecondsRef.current,
+      });
+
+      if (existingLock !== null) {
+        setRewindNotice(
+          `The full two-minute rewind has been used. Watch forward or use +10s until ${formatDuration(existingLock)} before rewinding again.`,
+        );
+        return;
+      }
+
+      const rewind = getPlaybackRewindTarget({
+        currentPositionSeconds: current,
+        furthestWatchedSeconds: furthestWatchedSecondsRef.current,
+      });
+
+      if (!rewind.canRewind || rewind.actualStepSeconds < 0.1) {
+        setRewindNotice(
+          rewind.floorSeconds <= 0 && current <= 0.1
+            ? "You are already at the beginning of the video."
+            : "You have reached the two-minute rewind limit. Watch forward or use +10s before rewinding again.",
+        );
+        return;
+      }
+
+      const duration = Number(playerRef.current?.getDuration?.()) || 0;
+      const nextRewindLock = resolvePlaybackRewindLock({
+        currentPositionSeconds: rewind.targetSeconds,
+        furthestWatchedSeconds: furthestWatchedSecondsRef.current,
+        reachedRewindFloor:
+          rewind.targetSeconds <= rewind.floorSeconds + 0.1,
+      });
+      playerRef.current?.seekTo?.(rewind.targetSeconds, true);
+      updateStoredMetrics({
+        watched: furthestWatchedSecondsRef.current,
+        currentPosition: rewind.targetSeconds,
+        rewindLockedUntil: nextRewindLock,
+        duration,
+      });
+      setRewindNotice("");
+    } catch {
+      setError("The video position could not be changed.");
+    }
+  }, [isReady, updateStoredMetrics]);
 
   const toggleMute = useCallback(() => {
     if (!isReady) {
@@ -536,7 +663,7 @@ export default function YouTubePlaybackPlayer({
             start:
               playbackSession.resumed
                 ? Math.floor(
-                    initialWatchedSeconds
+                    initialCurrentPositionSeconds
                   )
                 : 0,
             origin: window.location.origin,
@@ -549,7 +676,9 @@ export default function YouTubePlaybackPlayer({
               }
 
               const resumePosition = Number(
-                playbackSession.playback?.activeSession?.watchedSeconds || 0,
+                playbackSession.playback?.activeSession?.currentPositionSeconds ??
+                  playbackSession.playback?.activeSession?.watchedSeconds ??
+                  0,
               );
 
               if (playbackSession.resumed && resumePosition > 0) {
@@ -572,7 +701,8 @@ export default function YouTubePlaybackPlayer({
                 const iframe = event.target.getIframe?.();
 
                 updateStoredMetrics({
-                  watched: currentTime,
+                  watched: Math.max(currentTime, initialWatchedSeconds),
+                  currentPosition: currentTime,
                   duration,
                 });
 
@@ -650,9 +780,11 @@ export default function YouTubePlaybackPlayer({
     playerElementId,
     playbackSession.lesson.title,
     playbackSession.lesson.youtubeVideoId,
+    playbackSession.playback?.activeSession?.currentPositionSeconds,
     playbackSession.playback?.activeSession?.watchedSeconds,
     playbackSession.resumed,
     getPlayerMetrics,
+    initialCurrentPositionSeconds,
     initialWatchedSeconds,
     sendHeartbeatNow,
     updateStoredMetrics,
@@ -686,16 +818,20 @@ export default function YouTubePlaybackPlayer({
           playerRef.current?.getCurrentTime?.()
         );
 
+        const rewindFloor = getPlaybackRewindFloor(
+          furthestWatchedSecondsRef.current,
+        );
+
         if (
           isReady &&
           Number.isFinite(currentTime) &&
-          currentTime + 1.5 <
-            furthestWatchedSecondsRef.current
+          currentTime + 0.5 < rewindFloor
         ) {
           playerRef.current?.seekTo?.(
-            furthestWatchedSecondsRef.current,
+            rewindFloor,
             true
           );
+          metrics.currentPosition = rewindFloor;
         }
       } catch {
         // The next timer tick will retry.
@@ -778,12 +914,12 @@ export default function YouTubePlaybackPlayer({
 
         case "arrowright":
           event.preventDefault();
-          seekBy(5);
+          seekForwardBy(5);
           break;
 
         case "l":
           event.preventDefault();
-          seekBy(10);
+          seekForwardBy(10);
           break;
 
         case "m":
@@ -799,10 +935,21 @@ export default function YouTubePlaybackPlayer({
         default:
           break;
       }
-    }, [seekBy, toggleFullscreen, toggleMute, togglePlayback],
+    }, [seekForwardBy, toggleFullscreen, toggleMute, togglePlayback],
   );
 
-  const displayedTime = watchedSeconds;
+  const rewindAvailableSeconds = getPlaybackRewindAvailable({
+    currentPositionSeconds,
+    furthestWatchedSeconds: watchedSeconds,
+  });
+  const isRewindLocked =
+    rewindLockedUntilSeconds !== null &&
+    currentPositionSeconds < rewindLockedUntilSeconds - 0.1;
+  const displayedRewindAvailableSeconds = isRewindLocked
+    ? 0
+    : rewindAvailableSeconds;
+  const canRewind =
+    isReady && !isRewindLocked && rewindAvailableSeconds >= 0.1;
 
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
@@ -838,6 +985,12 @@ export default function YouTubePlaybackPlayer({
       {error && (
         <div className="px-5 pt-5 sm:px-7">
           <StatusMessage variant="error">{error}</StatusMessage>
+        </div>
+      )}
+
+      {rewindNotice && (
+        <div className="px-5 pt-5 sm:px-7">
+          <StatusMessage variant="warning">{rewindNotice}</StatusMessage>
         </div>
       )}
 
@@ -934,9 +1087,19 @@ export default function YouTubePlaybackPlayer({
           </div>
 
           <div className="shrink-0 border-t border-white/10 bg-slate-950 px-3 py-3 text-white sm:px-4">
-            <div className="flex items-center justify-between gap-3 text-xs font-bold tabular-nums text-slate-300">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs font-bold tabular-nums text-slate-300">
               <span>
-                Watched {formatDuration(displayedTime)}
+                Position {formatDuration(currentPositionSeconds)}
+              </span>
+
+              <span>
+                Watched {formatDuration(watchedSeconds)}
+              </span>
+
+              <span>
+                {isRewindLocked
+                  ? `Rewind locked until ${formatDuration(rewindLockedUntilSeconds)}`
+                  : `Rewind ${formatDuration(displayedRewindAvailableSeconds)} / ${formatDuration(PLAYBACK_REWIND_LIMIT_SECONDS)}`}
               </span>
 
               <span>
@@ -957,7 +1120,31 @@ export default function YouTubePlaybackPlayer({
 
               <button
                 type="button"
-                onClick={() => seekBy(10)}
+                onClick={rewindTenSeconds}
+                disabled={!isReady}
+                aria-disabled={!canRewind}
+                title={
+                  canRewind
+                    ? `Go back up to ${formatDuration(
+                        Math.min(10, displayedRewindAvailableSeconds),
+                      )}`
+                    : isRewindLocked
+                      ? `Watch or move forward to ${formatDuration(rewindLockedUntilSeconds)} to unlock rewind`
+                      : "Two-minute rewind limit reached"
+                }
+                className={`h-10 rounded-xl bg-white/10 px-3 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                  canRewind
+                    ? "hover:bg-white/20"
+                    : "cursor-not-allowed opacity-40"
+                }`}
+                aria-label="Go back up to 10 seconds"
+              >
+                -10s
+              </button>
+
+              <button
+                type="button"
+                onClick={() => seekForwardBy(10)}
                 disabled={!isReady}
                 className="h-10 rounded-xl bg-white/10 px-3 text-xs font-black transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Go forward 10 seconds"
@@ -1036,7 +1223,7 @@ export default function YouTubePlaybackPlayer({
           longer provides a working manual quality selector.
         </p>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl bg-slate-50 p-4">
             <p className="text-xs font-black uppercase tracking-wide text-slate-500">
               Watched
@@ -1044,6 +1231,18 @@ export default function YouTubePlaybackPlayer({
 
             <p className="mt-2 text-lg font-black text-slate-950">
               {formatDuration(watchedSeconds)}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+              Rewind available
+            </p>
+
+            <p className="mt-2 text-lg font-black text-slate-950">
+              {isRewindLocked
+                ? `Locked until ${formatDuration(rewindLockedUntilSeconds)}`
+                : `${formatDuration(displayedRewindAvailableSeconds)} / ${formatDuration(PLAYBACK_REWIND_LIMIT_SECONDS)}`}
             </p>
           </div>
 
@@ -1071,6 +1270,12 @@ export default function YouTubePlaybackPlayer({
         </div>
 
         <p className="mt-5 text-sm leading-6 text-slate-500">
+          You can rewind within the previous two minutes of your furthest
+          watched point. Watching forward or using +10s restores that rewind
+          allowance. You cannot move behind the two-minute boundary.
+        </p>
+
+        <p className="mt-3 text-sm leading-6 text-slate-500">
           Use End viewing when finished. Refreshing this browser tab keeps the
           session available for resume. Closing the tab leaves it active until
           the server timeout.

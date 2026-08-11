@@ -131,6 +131,13 @@ export const uploadMyNicImage =
         req.user._id
       );
 
+    if (student.nicVerificationStatus === "verified") {
+      throw new HttpError(
+        409,
+        "Your NIC image is already verified and cannot be replaced unless an administrator rejects it."
+      );
+    }
+
     const previousFileId =
       student.nicImageFileId;
 

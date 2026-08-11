@@ -6,6 +6,8 @@ export const startLessonPlayback = ({
   lessonId,
   sessionId = "",
   watchedSeconds = 0,
+  currentPositionSeconds = watchedSeconds,
+  rewindLockedUntilSeconds = null,
 }) => {
   const normalizedSessionId =
     String(sessionId || "").trim();
@@ -29,6 +31,14 @@ export const startLessonPlayback = ({
                 ) || 0,
                 0
               ),
+
+            currentPositionSeconds:
+              Math.max(
+                Number(currentPositionSeconds) || 0,
+                0
+              ),
+
+            rewindLockedUntilSeconds,
           }
         : {},
     }
@@ -48,6 +58,8 @@ export const getMyLessonPlayback = (
 export const sendPlaybackHeartbeat = ({
   sessionId,
   watchedSeconds,
+  currentPositionSeconds,
+  rewindLockedUntilSeconds,
   durationSeconds,
 }) => {
   return apiRequest(
@@ -59,6 +71,8 @@ export const sendPlaybackHeartbeat = ({
 
       body: {
         watchedSeconds,
+        currentPositionSeconds,
+        rewindLockedUntilSeconds,
         durationSeconds,
       },
     }

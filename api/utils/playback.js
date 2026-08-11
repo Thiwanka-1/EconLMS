@@ -1,5 +1,58 @@
 import LessonView from "../models/LessonView.js";
 
+export const PLAYBACK_REWIND_LIMIT_SECONDS = 120;
+
+export const getPlaybackRewindFloor = (furthestWatchedSeconds) => {
+  return Math.max(
+    Number(furthestWatchedSeconds) - PLAYBACK_REWIND_LIMIT_SECONDS || 0,
+    0
+  );
+};
+
+export const clampPlaybackPosition = ({
+  currentPositionSeconds,
+  furthestWatchedSeconds,
+}) => {
+  const furthest = Math.max(Number(furthestWatchedSeconds) || 0, 0);
+  const floor = getPlaybackRewindFloor(furthest);
+
+  return Math.min(
+    Math.max(Number(currentPositionSeconds) || 0, floor),
+    furthest
+  );
+};
+
+export const resolvePlaybackRewindLock = ({
+  currentPositionSeconds,
+  furthestWatchedSeconds,
+  existingLockSeconds = null,
+  requestedLockSeconds = null,
+  reachedRewindFloor = false,
+}) => {
+  const current = Math.max(Number(currentPositionSeconds) || 0, 0);
+  const furthest = Math.max(Number(furthestWatchedSeconds) || 0, 0);
+  const existing = Number(existingLockSeconds);
+  const requested = Number(requestedLockSeconds);
+
+  if (Number.isFinite(existing) && existing > current + 0.1) {
+    return Math.min(existing, furthest);
+  }
+
+  if (
+    Number.isFinite(requested) &&
+    requested > current + 0.1 &&
+    requested <= furthest + 0.1
+  ) {
+    return Math.min(requested, furthest);
+  }
+
+  if (reachedRewindFloor && current < furthest - 0.1) {
+    return furthest;
+  }
+
+  return null;
+};
+
 export const getPlaybackStaleMilliseconds = () => {
   const staleMinutes = Number(
     process.env.PLAYBACK_STALE_MINUTES || 3
@@ -98,6 +151,16 @@ export const finalizePlaybackSession =
       watchedSeconds:
         lessonView.activeSession
           .watchedSeconds || 0,
+
+      currentPositionSeconds:
+        lessonView.activeSession
+          .currentPositionSeconds ??
+        lessonView.activeSession
+          .watchedSeconds ??
+        0,
+
+      rewindLockedUntilSeconds:
+        lessonView.activeSession.rewindLockedUntilSeconds ?? null,
 
       durationSeconds:
         lessonView.activeSession
@@ -203,6 +266,12 @@ export const getLessonViewSummary = ({
           lessonView.activeSession.lastHeartbeatAt,
         watchedSeconds:
           lessonView.activeSession.watchedSeconds || 0,
+        currentPositionSeconds:
+          lessonView.activeSession.currentPositionSeconds ??
+          lessonView.activeSession.watchedSeconds ??
+          0,
+        rewindLockedUntilSeconds:
+          lessonView.activeSession.rewindLockedUntilSeconds ?? null,
         durationSeconds:
           lessonView.activeSession.durationSeconds || 0,
       }

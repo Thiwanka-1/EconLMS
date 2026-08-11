@@ -168,6 +168,15 @@ export default function StudentNicPage() {
     setError("");
     setSuccess("");
 
+    if (document?.verificationStatus === "verified") {
+      event.target.value = "";
+      setSelectedFile(null);
+      setError(
+        "Your verified NIC image cannot be replaced unless an administrator rejects it."
+      );
+      return;
+    }
+
     const file =
       event.target.files?.[0] ||
       null;
@@ -207,6 +216,13 @@ export default function StudentNicPage() {
     event
   ) => {
     event.preventDefault();
+
+    if (document?.verificationStatus === "verified") {
+      setError(
+        "Your verified NIC image cannot be replaced unless an administrator rejects it."
+      );
+      return;
+    }
 
     if (!selectedFile) {
       setError(
@@ -267,6 +283,7 @@ export default function StudentNicPage() {
         ?.verificationStatus
     ] ||
     statusDetails.not_uploaded;
+  const nicUploadLocked = document?.verificationStatus === "verified";
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
@@ -412,16 +429,17 @@ export default function StudentNicPage() {
 
         <section className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-black text-slate-950">
-            {document?.hasImage
+            {nicUploadLocked
+              ? "NIC upload complete"
+              : document?.hasImage
               ? "Replace NIC image"
               : "Upload NIC image"}
           </h2>
 
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Use a clear JPG, PNG or WebP
-            image. Replacing an existing
-            document returns its status
-            to pending review.
+            {nicUploadLocked
+              ? "Your verified NIC image is locked. Upload becomes available again only if an administrator rejects the document."
+              : "Use a clear JPG, PNG or WebP image. Replacing an existing document returns its status to pending review."}
           </p>
 
           <form
@@ -444,7 +462,7 @@ export default function StudentNicPage() {
               onChange={
                 handleFileChange
               }
-              disabled={isUploading}
+              disabled={isUploading || nicUploadLocked}
               className="mt-3 block w-full rounded-2xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-brand-100 file:px-4 file:py-2 file:text-sm file:font-black file:text-brand-800 hover:file:bg-brand-200 disabled:cursor-not-allowed disabled:opacity-60"
             />
 
@@ -468,12 +486,15 @@ export default function StudentNicPage() {
               type="submit"
               disabled={
                 isUploading ||
+                nicUploadLocked ||
                 !selectedFile
               }
               className="mt-5 w-full rounded-2xl bg-brand-600 px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isUploading
                 ? "Uploading…"
+                : nicUploadLocked
+                  ? "NIC verified"
                 : document?.hasImage
                   ? "Replace NIC image"
                   : "Upload NIC image"}

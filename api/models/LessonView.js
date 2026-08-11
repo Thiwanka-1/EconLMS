@@ -24,6 +24,18 @@ const activeSessionSchema =
         min: 0,
       },
 
+      currentPositionSeconds: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+
+      rewindLockedUntilSeconds: {
+        type: Number,
+        default: null,
+        min: 0,
+      },
+
       durationSeconds: {
         type: Number,
         default: 0,
@@ -82,6 +94,18 @@ const playbackHistorySchema =
       watchedSeconds: {
         type: Number,
         default: 0,
+      },
+
+      currentPositionSeconds: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+
+      rewindLockedUntilSeconds: {
+        type: Number,
+        default: null,
+        min: 0,
       },
 
       durationSeconds: {

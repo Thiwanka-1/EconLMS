@@ -13,11 +13,14 @@ import {
 } from "../utils/courseAccess.js";
 
 import {
+  clampPlaybackPosition,
   finalizePlaybackSession,
   finalizeStaleSessionIfNeeded,
+  getPlaybackRewindFloor,
   getLessonViewSummary,
   getOrCreateLessonView,
   isPlaybackSessionStale,
+  resolvePlaybackRewindLock,
 } from "../utils/playback.js";
 
 const getAvailableLesson = async (
@@ -109,6 +112,13 @@ export const startPlayback =
         ) || 0,
         0
       );
+    const requestedCurrentPosition = Number(req.body?.currentPositionSeconds);
+    const requestedCurrentPositionSeconds =
+      Number.isFinite(requestedCurrentPosition) && requestedCurrentPosition >= 0
+        ? requestedCurrentPosition
+        : requestedWatchedSeconds;
+    const requestedRewindLockedUntilSeconds =
+      req.body?.rewindLockedUntilSeconds;
 
     let lessonView =
       await getOrCreateLessonView({
@@ -148,11 +158,33 @@ export const startPlayback =
       );
       const plausibleWatchedSeconds = Math.min(
         requestedWatchedSeconds,
-        storedWatchedSeconds + elapsedSeconds * 2 + 5
+        storedWatchedSeconds + elapsedSeconds * 2 + 15
       );
       const resumedWatchedSeconds = knownDuration > 0
         ? Math.min(plausibleWatchedSeconds, knownDuration)
         : plausibleWatchedSeconds;
+      const resumedFurthestSeconds = Math.max(
+        storedWatchedSeconds,
+        resumedWatchedSeconds
+      );
+      const resumedCurrentPositionSeconds = clampPlaybackPosition({
+        currentPositionSeconds: requestedCurrentPositionSeconds,
+        furthestWatchedSeconds: resumedFurthestSeconds,
+      });
+      const resumedRewindFloor = getPlaybackRewindFloor(
+        resumedFurthestSeconds
+      );
+      const resumedRewindLockedUntilSeconds = resolvePlaybackRewindLock({
+        currentPositionSeconds: resumedCurrentPositionSeconds,
+        furthestWatchedSeconds: resumedFurthestSeconds,
+        existingLockSeconds:
+          lessonView.activeSession.rewindLockedUntilSeconds,
+        requestedLockSeconds: requestedRewindLockedUntilSeconds,
+        reachedRewindFloor:
+          resumedCurrentPositionSeconds <= resumedRewindFloor + 0.1 &&
+          Number(lessonView.activeSession.currentPositionSeconds) >
+            resumedRewindFloor + 0.1,
+      });
 
       lessonView =
         await LessonView.findOneAndUpdate(
@@ -165,6 +197,10 @@ export const startPlayback =
             $set: {
               "activeSession.lastHeartbeatAt":
                 new Date(),
+              "activeSession.currentPositionSeconds":
+                resumedCurrentPositionSeconds,
+              "activeSession.rewindLockedUntilSeconds":
+                resumedRewindLockedUntilSeconds,
             },
             $max: {
               "activeSession.watchedSeconds":
@@ -280,6 +316,8 @@ export const startPlayback =
               startedAt: now,
               lastHeartbeatAt: now,
               watchedSeconds: 0,
+              currentPositionSeconds: 0,
+              rewindLockedUntilSeconds: null,
               durationSeconds: 0,
 
               userAgent:
@@ -351,6 +389,8 @@ export const playbackHeartbeat =
   asyncHandler(async (req, res) => {
     const {
       watchedSeconds,
+      currentPositionSeconds,
+      rewindLockedUntilSeconds,
       durationSeconds,
     } = req.body;
 
@@ -390,6 +430,10 @@ export const playbackHeartbeat =
     };
 
     const maxValues = {};
+    const currentWatched = Number(
+      lessonView.activeSession.watchedSeconds || 0
+    );
+    let nextFurthestWatched = currentWatched;
 
     if (
       watchedSeconds !== undefined
@@ -402,9 +446,6 @@ export const playbackHeartbeat =
         Number.isFinite(watched) &&
         watched >= 0
       ) {
-        const currentWatched = Number(
-          lessonView.activeSession.watchedSeconds || 0
-        );
         const elapsedSeconds = Math.max(
           (Date.now() -
             new Date(lessonView.activeSession.lastHeartbeatAt).getTime()) /
@@ -412,14 +453,42 @@ export const playbackHeartbeat =
           0
         );
 
-        maxValues[
-          "activeSession.watchedSeconds"
-        ] = Math.min(
+        const acceptedWatched = Math.min(
           watched,
-          currentWatched + elapsedSeconds * 2 + 5
+          currentWatched + elapsedSeconds * 2 + 15
         );
+
+        nextFurthestWatched = Math.max(
+          currentWatched,
+          acceptedWatched
+        );
+        maxValues["activeSession.watchedSeconds"] = acceptedWatched;
       }
     }
+
+    const storedCurrentPosition =
+      lessonView.activeSession.currentPositionSeconds ?? currentWatched;
+    const requestedPosition = Number(currentPositionSeconds);
+    const nextCurrentPosition = clampPlaybackPosition({
+      currentPositionSeconds:
+        Number.isFinite(requestedPosition) && requestedPosition >= 0
+          ? requestedPosition
+          : storedCurrentPosition,
+      furthestWatchedSeconds: nextFurthestWatched,
+    });
+    const nextRewindFloor = getPlaybackRewindFloor(nextFurthestWatched);
+    update.$set["activeSession.currentPositionSeconds"] = nextCurrentPosition;
+    update.$set["activeSession.rewindLockedUntilSeconds"] =
+      resolvePlaybackRewindLock({
+        currentPositionSeconds: nextCurrentPosition,
+        furthestWatchedSeconds: nextFurthestWatched,
+        existingLockSeconds:
+          lessonView.activeSession.rewindLockedUntilSeconds,
+        requestedLockSeconds: rewindLockedUntilSeconds,
+        reachedRewindFloor:
+          nextCurrentPosition <= nextRewindFloor + 0.1 &&
+          Number(storedCurrentPosition) > nextRewindFloor + 0.1,
+      });
 
     if (
       durationSeconds !== undefined
@@ -474,6 +543,14 @@ export const playbackHeartbeat =
         durationSeconds:
           updatedView.activeSession
             .durationSeconds,
+
+        currentPositionSeconds:
+          updatedView.activeSession
+            .currentPositionSeconds,
+
+        rewindLockedUntilSeconds:
+          updatedView.activeSession
+            .rewindLockedUntilSeconds ?? null,
       },
     });
   });

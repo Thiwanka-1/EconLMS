@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { getApplicableReminderDay } from "../services/paymentReminderService.js";
-import { isPlaybackSessionStale } from "../utils/playback.js";
+import {
+  clampPlaybackPosition,
+  getPlaybackRewindFloor,
+  isPlaybackSessionStale,
+  resolvePlaybackRewindLock,
+} from "../utils/playback.js";
 
 test("payment reminder catch-up uses the nearest missed configured reminder", () => {
   const configured = [6, 3];
@@ -13,6 +18,60 @@ test("payment reminder catch-up uses the nearest missed configured reminder", ()
   assert.equal(getApplicableReminderDay(configured, 3), 3);
   assert.equal(getApplicableReminderDay(configured, 1), 3);
   assert.equal(getApplicableReminderDay(configured, -1), null);
+});
+
+test("server playback positions are constrained to the two-minute window", () => {
+  assert.equal(getPlaybackRewindFloor(300), 180);
+  assert.equal(
+    clampPlaybackPosition({
+      currentPositionSeconds: 177,
+      furthestWatchedSeconds: 300,
+    }),
+    180
+  );
+  assert.equal(
+    clampPlaybackPosition({
+      currentPositionSeconds: 187,
+      furthestWatchedSeconds: 300,
+    }),
+    187
+  );
+});
+
+test("server preserves a full-rewind lock until its original position", () => {
+  assert.equal(
+    resolvePlaybackRewindLock({
+      currentPositionSeconds: 180,
+      furthestWatchedSeconds: 300,
+      requestedLockSeconds: 300,
+    }),
+    300
+  );
+  assert.equal(
+    resolvePlaybackRewindLock({
+      currentPositionSeconds: 250,
+      furthestWatchedSeconds: 300,
+      existingLockSeconds: 300,
+      requestedLockSeconds: null,
+    }),
+    300
+  );
+  assert.equal(
+    resolvePlaybackRewindLock({
+      currentPositionSeconds: 300,
+      furthestWatchedSeconds: 300,
+      existingLockSeconds: 300,
+    }),
+    null
+  );
+  assert.equal(
+    resolvePlaybackRewindLock({
+      currentPositionSeconds: 180,
+      furthestWatchedSeconds: 300,
+      reachedRewindFloor: true,
+    }),
+    300
+  );
 });
 
 test("playback sessions become stale after the configured inactivity window", () => {

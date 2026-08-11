@@ -171,6 +171,12 @@ export default function StudentLessonsPage() {
 
             watchedSeconds:
               storedSession.watchedSeconds,
+
+            currentPositionSeconds:
+              storedSession.currentPositionSeconds,
+
+            rewindLockedUntilSeconds:
+              storedSession.rewindLockedUntilSeconds,
           });
 
         setStoredPlaybackProgress({
@@ -182,6 +188,19 @@ export default function StudentLessonsPage() {
             result.playback
               ?.activeSession
               ?.watchedSeconds || 0,
+          currentPositionSeconds:
+            result.playback
+              ?.activeSession
+              ?.currentPositionSeconds ??
+            result.playback
+              ?.activeSession
+              ?.watchedSeconds ??
+            0,
+          rewindLockedUntilSeconds:
+            result.playback
+              ?.activeSession
+              ?.rewindLockedUntilSeconds ??
+            null,
         });
 
         setActivePlayback(
