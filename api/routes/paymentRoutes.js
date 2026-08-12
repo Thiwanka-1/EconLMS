@@ -8,6 +8,7 @@ import {
   rejectPayment,
   viewPaymentSlip,
 } from "../controllers/paymentController.js";
+import { deleteRejectedPaymentPermanently } from "../controllers/cleanupController.js";
 
 import {
   authorize,
@@ -53,6 +54,13 @@ router.patch(
   authorize("admin"),
   validateObjectIdParam("id"),
   approvePayment
+);
+
+router.delete(
+  "/admin/:id",
+  authorize("admin"),
+  validateObjectIdParam("id"),
+  deleteRejectedPaymentPermanently
 );
 
 router.patch(

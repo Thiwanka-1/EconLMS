@@ -76,3 +76,10 @@ export const deleteAdminStudent = (userId, confirmation) => {
     body: { confirmation },
   });
 };
+
+export const deleteAdministrator = (userId, confirmation) => {
+  return apiRequest(`/users/admin/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+    body: { confirmation },
+  });
+};

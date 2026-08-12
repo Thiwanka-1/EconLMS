@@ -7,6 +7,7 @@ import LessonView from "../models/LessonView.js";
 import LiveClass from "../models/LiveClass.js";
 import Notification from "../models/Notification.js";
 import PaymentSubmission from "../models/PaymentSubmission.js";
+import PlatformSetting from "../models/PlatformSetting.js";
 import User from "../models/User.js";
 import ZoomRegistration from "../models/ZoomRegistration.js";
 
@@ -324,5 +325,247 @@ export const deleteCourseData = async ({ courseId, confirmation }) => {
     ),
     zoomRevoked: zoom.successCount,
     storageWarnings,
+  };
+};
+
+export const deleteLessonData = async ({ lessonId, confirmation }) => {
+  const lesson = await Lesson.findById(lessonId);
+
+  if (!lesson) {
+    throw new HttpError(404, "Lesson not found.");
+  }
+
+  if (!lesson.isArchived || lesson.isPublished) {
+    throw new HttpError(
+      409,
+      "A lesson must be unpublished and archived before permanent deletion."
+    );
+  }
+
+  if (String(confirmation || "").trim() !== lesson.title) {
+    throw new HttpError(400, "Enter the exact lesson title to confirm deletion.");
+  }
+
+  const activePlaybackCount = await LessonView.countDocuments({
+    lesson: lesson._id,
+    activeSession: { $ne: null },
+  });
+
+  if (activePlaybackCount > 0) {
+    throw new HttpError(
+      409,
+      `${activePlaybackCount} active playback session(s) still use this lesson. Wait for them to end or expire before deleting it.`
+    );
+  }
+
+  const notifications = await deleteRelatedNotifications({
+    lessonIds: [lesson._id],
+  });
+  const lessonViews = await LessonView.deleteMany({ lesson: lesson._id });
+  await Lesson.deleteOne({ _id: lesson._id });
+
+  return {
+    deletedLesson: {
+      id: lesson._id,
+      title: lesson.title,
+    },
+    counts: {
+      notifications: notifications.deletedCount || 0,
+      lessonViews: lessonViews.deletedCount || 0,
+    },
+  };
+};
+
+export const deleteBillingPeriodData = async ({ billingPeriodId, confirmation }) => {
+  const billingPeriod = await BillingPeriod.findById(billingPeriodId);
+
+  if (!billingPeriod) {
+    throw new HttpError(404, "Billing period not found.");
+  }
+
+  if (!billingPeriod.isArchived || billingPeriod.isPublished) {
+    throw new HttpError(
+      409,
+      "A billing period must be unpublished and archived before permanent deletion."
+    );
+  }
+
+  if (String(confirmation || "").trim() !== billingPeriod.label) {
+    throw new HttpError(400, "Enter the exact billing-period label to confirm deletion.");
+  }
+
+  const [lessonCount, liveClassCount, paymentCount, zoomCount, enrollmentCount] =
+    await Promise.all([
+      Lesson.countDocuments({ billingPeriod: billingPeriod._id }),
+      LiveClass.countDocuments({ billingPeriod: billingPeriod._id }),
+      PaymentSubmission.countDocuments({ billingPeriod: billingPeriod._id }),
+      ZoomRegistration.countDocuments({ billingPeriod: billingPeriod._id }),
+      Enrollment.countDocuments({ approvedBillingPeriods: billingPeriod._id }),
+    ]);
+
+  const dependencyCount =
+    lessonCount + liveClassCount + paymentCount + zoomCount + enrollmentCount;
+
+  if (dependencyCount > 0) {
+    throw new HttpError(
+      409,
+      `This billing period still has related data (${lessonCount} lessons, ${liveClassCount} live classes, ${paymentCount} payments, ${zoomCount} Zoom registrations and ${enrollmentCount} enrolments). Delete or retain those records first.`
+    );
+  }
+
+  const notifications = await deleteRelatedNotifications({
+    billingPeriodIds: [billingPeriod._id],
+  });
+  await BillingPeriod.deleteOne({ _id: billingPeriod._id });
+
+  return {
+    deletedBillingPeriod: {
+      id: billingPeriod._id,
+      label: billingPeriod.label,
+    },
+    counts: {
+      notifications: notifications.deletedCount || 0,
+    },
+  };
+};
+
+export const deleteRejectedPaymentData = async ({ paymentId, confirmation }) => {
+  const payment = await PaymentSubmission.findById(paymentId)
+    .select("+driveFileId")
+    .populate("student", "email")
+    .populate("course", "code");
+
+  if (!payment) {
+    throw new HttpError(404, "Payment submission not found.");
+  }
+
+  if (payment.status !== "rejected") {
+    throw new HttpError(
+      409,
+      "Only rejected payment submissions can be permanently deleted individually."
+    );
+  }
+
+  if (String(confirmation || "").trim().toUpperCase() !== "DELETE") {
+    throw new HttpError(400, "Enter DELETE to confirm rejected-payment deletion.");
+  }
+
+  const storageWarnings = await deleteExternalFiles([payment.driveFileId]);
+  const notifications = await deleteRelatedNotifications({
+    paymentIds: [payment._id],
+  });
+  await PaymentSubmission.deleteOne({ _id: payment._id });
+
+  return {
+    deletedPayment: {
+      id: payment._id,
+      studentEmail: payment.student?.email || "",
+      courseCode: payment.course?.code || "",
+    },
+    counts: {
+      notifications: notifications.deletedCount || 0,
+    },
+    storageWarnings,
+  };
+};
+
+export const deleteAdministratorData = async ({
+  administratorId,
+  actingAdministratorId,
+  confirmation,
+}) => {
+  const administrator = await User.findById(administratorId);
+
+  if (!administrator || administrator.role !== "admin") {
+    throw new HttpError(404, "Administrator account not found.");
+  }
+
+  if (administrator._id.toString() === actingAdministratorId.toString()) {
+    throw new HttpError(409, "You cannot permanently delete your own administrator account.");
+  }
+
+  if (administrator.isActive) {
+    throw new HttpError(409, "Disable the administrator account before permanent deletion.");
+  }
+
+  if (
+    String(confirmation || "").trim().toLowerCase() !==
+    administrator.email.toLowerCase()
+  ) {
+    throw new HttpError(
+      400,
+      "Enter the administrator's exact email address to confirm deletion."
+    );
+  }
+
+  const activeAdminCount = await User.countDocuments({
+    role: "admin",
+    isActive: true,
+  });
+
+  if (activeAdminCount < 1) {
+    throw new HttpError(409, "At least one active administrator must remain.");
+  }
+
+  const replacement = actingAdministratorId;
+
+  await Promise.all([
+    Course.updateMany({ createdBy: administrator._id }, { $set: { createdBy: replacement } }),
+    Course.updateMany({ updatedBy: administrator._id }, { $set: { updatedBy: replacement } }),
+    BillingPeriod.updateMany(
+      { createdBy: administrator._id },
+      { $set: { createdBy: replacement } }
+    ),
+    BillingPeriod.updateMany(
+      { updatedBy: administrator._id },
+      { $set: { updatedBy: replacement } }
+    ),
+    Lesson.updateMany({ createdBy: administrator._id }, { $set: { createdBy: replacement } }),
+    Lesson.updateMany({ updatedBy: administrator._id }, { $set: { updatedBy: replacement } }),
+    LiveClass.updateMany(
+      { createdBy: administrator._id },
+      { $set: { createdBy: replacement } }
+    ),
+    LiveClass.updateMany(
+      { updatedBy: administrator._id },
+      { $set: { updatedBy: replacement } }
+    ),
+    Enrollment.updateMany(
+      { managedBy: administrator._id },
+      { $set: { managedBy: replacement } }
+    ),
+    PaymentSubmission.updateMany(
+      { reviewedBy: administrator._id },
+      { $set: { reviewedBy: replacement } }
+    ),
+    User.updateMany(
+      { nicVerifiedBy: administrator._id },
+      { $set: { nicVerifiedBy: replacement } }
+    ),
+    PlatformSetting.updateMany(
+      { updatedBy: administrator._id },
+      { $set: { updatedBy: replacement } }
+    ),
+    LessonView.updateMany(
+      { lastModifiedByAdmin: administrator._id },
+      { $set: { lastModifiedByAdmin: replacement } }
+    ),
+    AuditLog.updateMany({ actor: administrator._id }, { $set: { actor: null } }),
+    AuditLog.updateMany({ targetUser: administrator._id }, { $set: { targetUser: null } }),
+  ]);
+
+  const notifications = await Notification.deleteMany({
+    recipient: administrator._id,
+  });
+  await User.deleteOne({ _id: administrator._id });
+
+  return {
+    deletedAdministrator: {
+      id: administrator._id,
+      email: administrator.email,
+    },
+    counts: {
+      notifications: notifications.deletedCount || 0,
+    },
   };
 };

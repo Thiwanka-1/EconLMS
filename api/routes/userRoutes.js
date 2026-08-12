@@ -6,7 +6,10 @@ import {
   setUserStatus,
   updateUser,
 } from "../controllers/userController.js";
-import { deleteStudentPermanently } from "../controllers/cleanupController.js";
+import {
+  deleteAdministratorPermanently,
+  deleteStudentPermanently,
+} from "../controllers/cleanupController.js";
 import {
   authorize,
   protect,
@@ -23,6 +26,13 @@ router.post(
   "/admin",
   authorize("admin"),
   createAdminUser
+);
+
+router.delete(
+  "/admin/:id",
+  validateObjectId,
+  authorize("admin"),
+  deleteAdministratorPermanently
 );
 
 router.get("/:id", validateObjectId, getUserById);

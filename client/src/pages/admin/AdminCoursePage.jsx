@@ -13,6 +13,7 @@ import {
 import {
   archiveAdminBillingPeriod,
   createAdminBillingPeriod,
+  deleteAdminBillingPeriod,
   getAdminBillingPeriods,
   restoreAdminBillingPeriod,
   setAdminBillingPeriodStatus,
@@ -30,6 +31,7 @@ import {
 import {
   archiveAdminLesson,
   createAdminLesson,
+  deleteAdminLesson,
   getAdminLessons,
   restoreAdminLesson,
   setAdminLessonPublication,
@@ -594,6 +596,36 @@ export default function AdminCoursePage() {
       setError(requestError.message || "Course could not be permanently deleted.");
       setBusyId("");
     }
+  };
+
+  const deleteBillingPeriod = async (period) => {
+    const confirmation = window.prompt(
+      `Permanently delete ${period.label}? This is allowed only when no lessons, live classes, payments, Zoom registrations or enrolment access records still use it. Enter the exact label to confirm:\n\n${period.label}`
+    );
+
+    if (confirmation === null) {
+      return;
+    }
+
+    await runAction(
+      `period-delete-${period._id}`,
+      () => deleteAdminBillingPeriod(period._id, confirmation)
+    );
+  };
+
+  const deleteLesson = async (lesson) => {
+    const confirmation = window.prompt(
+      `Permanently delete this archived lesson, its playback history and related notifications? Enter the exact title to confirm:\n\n${lesson.title}`
+    );
+
+    if (confirmation === null) {
+      return;
+    }
+
+    await runAction(
+      `lesson-delete-${lesson._id}`,
+      () => deleteAdminLesson(lesson._id, confirmation)
+    );
   };
 
   const saveCourse = async (
@@ -1538,21 +1570,35 @@ export default function AdminCoursePage() {
                         )}
 
                         {period.isArchived && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              runAction(
-                                `period-restore-${period._id}`,
-                                () =>
-                                  restoreAdminBillingPeriod(
-                                    period._id
-                                  )
-                              )
-                            }
-                            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700"
-                          >
-                            Restore
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              disabled={Boolean(busyId)}
+                              onClick={() =>
+                                runAction(
+                                  `period-restore-${period._id}`,
+                                  () =>
+                                    restoreAdminBillingPeriod(
+                                      period._id
+                                    )
+                                )
+                              }
+                              className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 disabled:opacity-50"
+                            >
+                              Restore
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={Boolean(busyId)}
+                              onClick={() => void deleteBillingPeriod(period)}
+                              className="rounded-xl bg-red-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50"
+                            >
+                              {busyId === `period-delete-${period._id}`
+                                ? "Deleting…"
+                                : "Delete permanently"}
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1886,21 +1932,35 @@ export default function AdminCoursePage() {
                       )}
 
                       {lesson.isArchived && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            runAction(
-                              `lesson-restore-${lesson._id}`,
-                              () =>
-                                restoreAdminLesson(
-                                  lesson._id
-                                )
-                            )
-                          }
-                          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700"
-                        >
-                          Restore
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            disabled={Boolean(busyId)}
+                            onClick={() =>
+                              runAction(
+                                `lesson-restore-${lesson._id}`,
+                                () =>
+                                  restoreAdminLesson(
+                                    lesson._id
+                                  )
+                              )
+                            }
+                            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 disabled:opacity-50"
+                          >
+                            Restore
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={Boolean(busyId)}
+                            onClick={() => void deleteLesson(lesson)}
+                            className="rounded-xl bg-red-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50"
+                          >
+                            {busyId === `lesson-delete-${lesson._id}`
+                              ? "Deleting…"
+                              : "Delete permanently"}
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>

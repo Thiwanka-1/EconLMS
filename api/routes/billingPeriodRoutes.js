@@ -10,6 +10,7 @@ import {
   setBillingPeriodStatus,
   updateBillingPeriod,
 } from "../controllers/billingPeriodController.js";
+import { deleteBillingPeriodPermanently } from "../controllers/cleanupController.js";
 
 import {
   authorize,
@@ -54,6 +55,13 @@ router.patch(
   authorize("admin"),
   validateObjectIdParam("id"),
   updateBillingPeriod
+);
+
+router.delete(
+  "/:id",
+  authorize("admin"),
+  validateObjectIdParam("id"),
+  deleteBillingPeriodPermanently
 );
 
 router.patch(

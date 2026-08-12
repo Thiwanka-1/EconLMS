@@ -11,6 +11,7 @@ import {
 
 import {
   approveAdminPayment,
+  deleteAdminRejectedPayment,
   getAdminPayment,
   getAdminPaymentFile,
   getAdminPayments,
@@ -294,6 +295,41 @@ export default function AdminPaymentsPage() {
         setBusyAction("");
       }
     };
+
+  const deleteRejectedPayment = async () => {
+    if (!selectedPayment || selectedPayment.status !== "rejected") {
+      return;
+    }
+
+    const confirmation = window.prompt(
+      "Permanently delete this rejected payment and its uploaded Google Drive slip? Enter DELETE to confirm."
+    );
+
+    if (confirmation === null) {
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setBusyAction("delete");
+
+    try {
+      const result = await deleteAdminRejectedPayment(
+        selectedPayment._id,
+        confirmation
+      );
+
+      closePayment();
+      setSuccess(result.message || "Rejected payment permanently deleted.");
+      await loadPayments(pagination.currentPage);
+    } catch (requestError) {
+      setError(
+        requestError.message || "The rejected payment could not be deleted."
+      );
+    } finally {
+      setBusyAction("");
+    }
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -681,6 +717,27 @@ export default function AdminPaymentsPage() {
                       selectedPayment.reviewNote
                     }
                   </p>
+                </div>
+              )}
+
+              {selectedPayment.status === "rejected" && (
+                <div className="mt-7 rounded-2xl border border-red-200 bg-red-50 p-5">
+                  <p className="text-sm leading-6 text-red-800">
+                    Deleting removes both this rejected record and its uploaded
+                    payment slip. Approved and pending payments cannot be
+                    individually deleted.
+                  </p>
+
+                  <button
+                    type="button"
+                    disabled={Boolean(busyAction)}
+                    onClick={() => void deleteRejectedPayment()}
+                    className="mt-4 rounded-xl bg-red-700 px-5 py-3 text-sm font-black text-white disabled:opacity-50"
+                  >
+                    {busyAction === "delete"
+                      ? "Deleting…"
+                      : "Delete rejected payment"}
+                  </button>
                 </div>
               )}
             </div>

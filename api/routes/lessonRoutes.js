@@ -9,6 +9,7 @@ import {
   setLessonPublication,
   updateLesson,
 } from "../controllers/lessonController.js";
+import { deleteLessonPermanently } from "../controllers/cleanupController.js";
 
 import {
   authorize,
@@ -44,6 +45,13 @@ router.patch(
   authorize("admin"),
   validateObjectIdParam("id"),
   updateLesson
+);
+
+router.delete(
+  "/:id",
+  authorize("admin"),
+  validateObjectIdParam("id"),
+  deleteLessonPermanently
 );
 
 router.patch(

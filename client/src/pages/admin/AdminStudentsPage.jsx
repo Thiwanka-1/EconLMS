@@ -10,6 +10,7 @@ import {
 
 import {
   createAdminUser,
+  deleteAdministrator,
   getAdminUsers,
   setAdminUserStatus,
 } from "../../api/userAdminApi.js";
@@ -143,6 +144,35 @@ export default function AdminStudentsPage() {
         setBusyId("");
       }
     };
+
+  const deleteAdminAccount = async (administrator) => {
+    const confirmation = window.prompt(
+      `Permanently delete this disabled administrator? Ownership references will be transferred to your account and audit snapshots will remain. Enter the exact email to confirm:\n\n${administrator.email}`
+    );
+
+    if (confirmation === null) {
+      return;
+    }
+
+    setBusyId(`delete-${administrator._id}`);
+    setError("");
+    setSuccess("");
+
+    try {
+      const result = await deleteAdministrator(
+        administrator._id,
+        confirmation
+      );
+      setSuccess(result.message || "Administrator permanently deleted.");
+      await loadStudents(pagination.currentPage);
+    } catch (requestError) {
+      setError(
+        requestError.message || "Administrator account could not be deleted."
+      );
+    } finally {
+      setBusyId("");
+    }
+  };
 
   const handleAdminFormChange = (event) => {
     const { name, value } = event.target;
@@ -451,8 +481,7 @@ export default function AdminStudentsPage() {
                     <button
                       type="button"
                       disabled={
-                        busyId ===
-                        student._id
+                        Boolean(busyId)
                       }
                       onClick={() => {
                         const action =
@@ -484,6 +513,19 @@ export default function AdminStudentsPage() {
                           ? "Disable"
                           : "Enable"}
                     </button>
+
+                    {accountRole === "admin" && !student.isActive && (
+                      <button
+                        type="button"
+                        disabled={Boolean(busyId)}
+                        onClick={() => void deleteAdminAccount(student)}
+                        className="rounded-xl bg-red-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50"
+                      >
+                        {busyId === `delete-${student._id}`
+                          ? "Deleting…"
+                          : "Delete permanently"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </article>

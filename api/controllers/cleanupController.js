@@ -2,9 +2,13 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { recordAuditLog } from "../utils/auditLog.js";
 
 import {
+  deleteAdministratorData,
+  deleteBillingPeriodData,
   deleteCourseData,
   deleteEnrollmentData,
+  deleteLessonData,
   deleteLiveClassData,
+  deleteRejectedPaymentData,
   deleteStudentData,
 } from "../services/dataCleanupService.js";
 
@@ -102,5 +106,74 @@ export const deleteCoursePermanently = asyncHandler(async (req, res) => {
     entityType: "Course",
     entityId: result.deletedCourse.id,
     description: `Course ${result.deletedCourse.code} and all related LMS records were permanently deleted.`,
+  });
+});
+
+export const deleteLessonPermanently = asyncHandler(async (req, res) => {
+  const result = await deleteLessonData({
+    lessonId: req.params.id,
+    confirmation: req.body?.confirmation,
+  });
+
+  await respondWithCleanup({
+    req,
+    res,
+    result,
+    action: "LESSON_PERMANENTLY_DELETED",
+    entityType: "Lesson",
+    entityId: result.deletedLesson.id,
+    description: `Lesson "${result.deletedLesson.title}" and its playback records were permanently deleted.`,
+  });
+});
+
+export const deleteBillingPeriodPermanently = asyncHandler(async (req, res) => {
+  const result = await deleteBillingPeriodData({
+    billingPeriodId: req.params.id,
+    confirmation: req.body?.confirmation,
+  });
+
+  await respondWithCleanup({
+    req,
+    res,
+    result,
+    action: "BILLING_PERIOD_PERMANENTLY_DELETED",
+    entityType: "BillingPeriod",
+    entityId: result.deletedBillingPeriod.id,
+    description: `Billing period "${result.deletedBillingPeriod.label}" was permanently deleted.`,
+  });
+});
+
+export const deleteRejectedPaymentPermanently = asyncHandler(async (req, res) => {
+  const result = await deleteRejectedPaymentData({
+    paymentId: req.params.id,
+    confirmation: req.body?.confirmation,
+  });
+
+  await respondWithCleanup({
+    req,
+    res,
+    result,
+    action: "REJECTED_PAYMENT_PERMANENTLY_DELETED",
+    entityType: "PaymentSubmission",
+    entityId: result.deletedPayment.id,
+    description: "The rejected payment submission and uploaded slip were permanently deleted.",
+  });
+});
+
+export const deleteAdministratorPermanently = asyncHandler(async (req, res) => {
+  const result = await deleteAdministratorData({
+    administratorId: req.params.id,
+    actingAdministratorId: req.user._id,
+    confirmation: req.body?.confirmation,
+  });
+
+  await respondWithCleanup({
+    req,
+    res,
+    result,
+    action: "ADMINISTRATOR_PERMANENTLY_DELETED",
+    entityType: "User",
+    entityId: result.deletedAdministrator.id,
+    description: `Administrator ${result.deletedAdministrator.email} was permanently deleted and ownership was transferred.`,
   });
 });

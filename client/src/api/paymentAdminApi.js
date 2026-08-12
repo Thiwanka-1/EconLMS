@@ -80,3 +80,10 @@ export const rejectAdminPayment = ({
     }
   );
 };
+
+export const deleteAdminRejectedPayment = (paymentId, confirmation) => {
+  return apiRequest(`/payments/admin/${encodeURIComponent(paymentId)}`, {
+    method: "DELETE",
+    body: { confirmation },
+  });
+};

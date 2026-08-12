@@ -77,3 +77,10 @@ export const restoreAdminBillingPeriod =
       }
     );
   };
+
+export const deleteAdminBillingPeriod = (billingPeriodId, confirmation) => {
+  return apiRequest(`/billing-periods/${encodeURIComponent(billingPeriodId)}`, {
+    method: "DELETE",
+    body: { confirmation },
+  });
+};

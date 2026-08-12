@@ -82,3 +82,10 @@ export const restoreAdminLesson = (
     }
   );
 };
+
+export const deleteAdminLesson = (lessonId, confirmation) => {
+  return apiRequest(`/lessons/${encodeURIComponent(lessonId)}`, {
+    method: "DELETE",
+    body: { confirmation },
+  });
+};
