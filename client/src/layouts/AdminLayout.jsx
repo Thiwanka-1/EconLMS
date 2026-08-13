@@ -42,6 +42,10 @@ export default function AdminLayout() {
           to: "/admin/settings",
           label: "Settings",
         },
+        {
+          to: "/admin/security",
+          label: "Security",
+        },
       ]}
     />
   );

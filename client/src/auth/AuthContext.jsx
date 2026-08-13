@@ -76,6 +76,19 @@ export function AuthProvider({
     };
   }, []);
 
+  useEffect(() => {
+    const handleSessionEnded = () => {
+      setUser(null);
+      setStatus("ready");
+    };
+
+    window.addEventListener("econlls:session-ended", handleSessionEnded);
+
+    return () => {
+      window.removeEventListener("econlls:session-ended", handleSessionEnded);
+    };
+  }, []);
+
   const login = useCallback(
     async ({
       email,

@@ -24,8 +24,18 @@ import {
 } from "../utils/platformSettings.js";
 
 import {
+  clearPasswordResetOtp,
+  recordFailedPasswordResetAttempt,
+} from "../utils/passwordReset.js";
+
+import {
   notifyAdminsOfStudentRegistration,
 } from "../services/adminNotificationService.js";
+
+import {
+  createAuthSession,
+  revokeAllUserSessions,
+} from "../services/authSessionService.js";
 
 const requiredStudentFields = [
   "firstName",
@@ -132,13 +142,33 @@ const createPasswordResetOtp = async (
   user.passwordResetOtpExpiresAt =
     createOtpExpiryDate();
   user.passwordResetOtpSentAt = new Date();
+  user.passwordResetOtpAttempts = 0;
 
   await user.save();
 
-  await sendPasswordResetOtpEmail({
-    email: user.email,
-    otp,
-  });
+  try {
+    await sendPasswordResetOtpEmail({
+      email: user.email,
+      otp,
+    });
+  } catch (error) {
+    /*
+     * Do not leave an undelivered code active or force the user to
+     * wait for the resend cooldown after an SMTP failure.
+     */
+    clearPasswordResetOtp(user);
+
+    try {
+      await user.save();
+    } catch (cleanupError) {
+      console.error(
+        "Password reset code cleanup failed:",
+        cleanupError.message
+      );
+    }
+
+    throw error;
+  }
 };
 
 export const signup = asyncHandler(
@@ -308,7 +338,10 @@ export const verifyEmail = asyncHandler(
       );
     }
 
-    const token = generateAuthToken(user);
+    const authSession = await createAuthSession({ user, req });
+    const token = generateAuthToken(user, {
+      sessionId: authSession._id,
+    });
     setAuthCookie(res, token);
 
     res.status(200).json({
@@ -404,7 +437,10 @@ export const login = asyncHandler(
     user.lastLoginAt = new Date();
     await user.save();
 
-    const token = generateAuthToken(user);
+    const authSession = await createAuthSession({ user, req });
+    const token = generateAuthToken(user, {
+      sessionId: authSession._id,
+    });
     setAuthCookie(res, token);
 
     res.status(200).json({
@@ -417,6 +453,10 @@ export const login = asyncHandler(
 
 export const logout = asyncHandler(
   async (req, res) => {
+    req.authSession.revokedAt = new Date();
+    req.authSession.revocationReason = "logout";
+    await req.authSession.save();
+
     clearAuthCookie(res);
 
     res.status(200).json({
@@ -483,10 +523,10 @@ export const resetPassword = asyncHandler(
     const user = await User.findOne({
       email: normalizeEmail(email),
     }).select(
-      "+passwordResetOtpHash +passwordResetOtpExpiresAt"
+      "+password +passwordResetOtpHash +passwordResetOtpExpiresAt +passwordResetOtpAttempts"
     );
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || !user.isEmailVerified) {
       throw new HttpError(
         400,
         "Invalid or expired password reset code."
@@ -498,27 +538,50 @@ export const resetPassword = asyncHandler(
       user.passwordResetOtpExpiresAt <
         new Date();
 
-    const otpMatches = compareOtp(
-      otp,
-      user.passwordResetOtpHash
-    );
+    const otpHasValidFormat = /^\d{6}$/.test(String(otp));
+    const otpMatches =
+      otpHasValidFormat &&
+      compareOtp(
+        otp,
+        user.passwordResetOtpHash
+      );
 
     if (otpExpired || !otpMatches) {
+      if (otpExpired) {
+        clearPasswordResetOtp(user);
+      } else {
+        recordFailedPasswordResetAttempt(user);
+      }
+
+      await user.save();
+
       throw new HttpError(
         400,
         "Invalid or expired password reset code."
       );
     }
 
+    const passwordIsReused = await user.comparePassword(password);
+
+    if (passwordIsReused) {
+      throw new HttpError(
+        400,
+        "Choose a password that is different from your current password."
+      );
+    }
+
     user.password = password;
-    user.passwordResetOtpHash = null;
-    user.passwordResetOtpExpiresAt = null;
-    user.passwordResetOtpSentAt = null;
+    clearPasswordResetOtp(user);
     user.passwordChangedAt = new Date();
     user.authVersion =
       Number(user.authVersion || 0) + 1;
 
     await user.save();
+
+    await revokeAllUserSessions({
+      userId: user._id,
+      reason: "password_reset",
+    });
 
     clearAuthCookie(res);
 
@@ -587,11 +650,22 @@ export const changePassword = asyncHandler(
 
     await user.save();
 
+    await revokeAllUserSessions({
+      userId: user._id,
+      exceptSessionId: req.authSession._id,
+      reason: "password_changed",
+    });
+
+    req.authSession.authVersion = user.authVersion;
+    await req.authSession.save();
+
     /*
      * Previous sessions become invalid, but the
      * current session receives a fresh cookie.
      */
-    const token = generateAuthToken(user);
+    const token = generateAuthToken(user, {
+      sessionId: req.authSession._id,
+    });
     setAuthCookie(res, token);
 
     res.status(200).json({

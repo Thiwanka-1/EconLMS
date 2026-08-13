@@ -58,6 +58,13 @@ export const validateEnvironment = () => {
     "JWT_SECRET must contain at least 32 characters."
   );
 
+  addError(
+    errors,
+    hasValue("AUTH_MAX_ACTIVE_SESSIONS") &&
+      !isPositiveNumber(process.env.AUTH_MAX_ACTIVE_SESSIONS),
+    "AUTH_MAX_ACTIVE_SESSIONS must be a positive number."
+  );
+
   addError(errors, !process.env.OTP_HASH_SECRET, "OTP_HASH_SECRET is required.");
   addError(
     errors,
@@ -76,6 +83,13 @@ export const validateEnvironment = () => {
     hasValue("OTP_RESEND_COOLDOWN_SECONDS") &&
       !isPositiveNumber(process.env.OTP_RESEND_COOLDOWN_SECONDS),
     "OTP_RESEND_COOLDOWN_SECONDS must be a positive number."
+  );
+
+  addError(
+    errors,
+    hasValue("PASSWORD_RESET_MAX_ATTEMPTS") &&
+      !isPositiveNumber(process.env.PASSWORD_RESET_MAX_ATTEMPTS),
+    "PASSWORD_RESET_MAX_ATTEMPTS must be a positive number."
   );
 
   addError(
@@ -165,6 +179,17 @@ if (
       errors,
       hasValue(timeoutName) && !isPositiveNumber(process.env[timeoutName]),
       `${timeoutName} must be a positive number.`
+    );
+  }
+
+  for (const monitoringName of [
+    "AUTH_EMAIL_FAILURE_ALERT_THRESHOLD",
+    "AUTH_EMAIL_FAILURE_ALERT_COOLDOWN_MINUTES",
+  ]) {
+    addError(
+      errors,
+      hasValue(monitoringName) && !isPositiveNumber(process.env[monitoringName]),
+      `${monitoringName} must be a positive number.`
     );
   }
 

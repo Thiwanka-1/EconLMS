@@ -1,5 +1,6 @@
 import {
   Link,
+  NavLink,
   Outlet,
 } from "react-router";
 
@@ -43,7 +44,7 @@ export default function PublicLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link
             to="/"
             className="flex items-center gap-3"
@@ -67,8 +68,30 @@ export default function PublicLayout() {
             </span>
           </Link>
 
+          <nav className="order-3 flex w-full items-center gap-1 border-t border-slate-100 pt-3 sm:order-2 sm:ml-4 sm:w-auto sm:border-0 sm:pt-0" aria-label="Public navigation">
+            {[
+              ["/", "Home", true],
+              ["/about", "About", false],
+              ["/contact", "Contact", false],
+            ].map(([to, label, end]) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) => [
+                  "rounded-xl px-3 py-2 text-sm font-bold transition sm:px-4",
+                  isActive
+                    ? "bg-brand-50 text-brand-700"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+                ].join(" ")}
+              >
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+
           {status !== "loading" && (
-            <div className="flex items-center gap-2">
+            <div className="order-2 ml-auto flex items-center gap-2 sm:order-3">
               {user ? (
                 <Link
                   to={getRoleHome(

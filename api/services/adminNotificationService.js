@@ -17,7 +17,7 @@ const getStudentName = (student) => {
   return fullName || "A student";
 };
 
-const createNotificationsForActiveAdmins = async ({
+export const createNotificationsForActiveAdmins = async ({
   type,
   title,
   message,

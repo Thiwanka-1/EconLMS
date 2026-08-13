@@ -212,6 +212,13 @@ passwordResetOtpSentAt: {
   default: null,
 },
 
+passwordResetOtpAttempts: {
+  type: Number,
+  select: false,
+  default: 0,
+  min: 0,
+},
+
 passwordChangedAt: {
   type: Date,
   default: null,
@@ -241,6 +248,7 @@ authVersion: {
         delete returnedObject.passwordResetOtpHash;
         delete returnedObject.passwordResetOtpExpiresAt;
         delete returnedObject.passwordResetOtpSentAt;
+        delete returnedObject.passwordResetOtpAttempts;
 
         return returnedObject;
       },

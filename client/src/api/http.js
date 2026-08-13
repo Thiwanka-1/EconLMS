@@ -87,6 +87,12 @@ const createApiError = (
   );
 };
 
+const notifySessionEnded = (response) => {
+  if (response.status === 401 && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("econlls:session-ended"));
+  }
+};
+
 const performFetch = async (
   path,
   options
@@ -191,6 +197,7 @@ export const apiRequest = async (
     );
 
   if (!response.ok) {
+    notifySessionEnded(response);
     throw createApiError(
       response,
       data
@@ -217,6 +224,7 @@ export const apiBlobRequest = async (
     });
 
   if (!response.ok) {
+    notifySessionEnded(response);
     const data =
       await parseResponseBody(
         response

@@ -45,6 +45,7 @@ const protectedUserFields = new Set([
   "passwordResetOtpHash",
   "passwordResetOtpExpiresAt",
   "passwordResetOtpSentAt",
+  "passwordResetOtpAttempts",
 ]);
 
 const normalizeEmail = (value) => {
@@ -330,6 +331,7 @@ export const updateUser = asyncHandler(async (req, res) => {
     user.passwordResetOtpHash = null;
     user.passwordResetOtpExpiresAt = null;
     user.passwordResetOtpSentAt = null;
+    user.passwordResetOtpAttempts = 0;
     user.authVersion += 1;
   }
 

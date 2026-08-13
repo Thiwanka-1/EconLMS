@@ -10,6 +10,7 @@ import PaymentSubmission from "../models/PaymentSubmission.js";
 import PlatformSetting from "../models/PlatformSetting.js";
 import User from "../models/User.js";
 import ZoomRegistration from "../models/ZoomRegistration.js";
+import AuthSession from "../models/AuthSession.js";
 
 import HttpError from "../utils/HttpError.js";
 import { deleteDriveFile } from "../utils/googleDrive.js";
@@ -150,6 +151,7 @@ export const deleteStudentData = async ({ studentId, confirmation }) => {
   results.lessonViews = await LessonView.deleteMany({ student: student._id });
   results.payments = await PaymentSubmission.deleteMany({ student: student._id });
   results.enrollments = await Enrollment.deleteMany({ student: student._id });
+  results.authSessions = await AuthSession.deleteMany({ user: student._id });
 
   await AuditLog.updateMany({ actor: student._id }, { $set: { actor: null } });
   await AuditLog.updateMany({ targetUser: student._id }, { $set: { targetUser: null } });
@@ -557,6 +559,9 @@ export const deleteAdministratorData = async ({
   const notifications = await Notification.deleteMany({
     recipient: administrator._id,
   });
+  const authSessions = await AuthSession.deleteMany({
+    user: administrator._id,
+  });
   await User.deleteOne({ _id: administrator._id });
 
   return {
@@ -566,6 +571,7 @@ export const deleteAdministratorData = async ({
     },
     counts: {
       notifications: notifications.deletedCount || 0,
+      authSessions: authSessions.deletedCount || 0,
     },
   };
 };

@@ -171,14 +171,19 @@ export default function ResetPasswordPage() {
           label="Password-reset code"
           value={otp}
           onChange={(event) =>
-            setOtp(event.target.value)
+            setOtp(
+              event.target.value
+                .replace(/\D/g, "")
+                .slice(0, 6)
+            )
           }
           autoComplete="one-time-code"
           inputMode="numeric"
           placeholder="Enter the code"
           required
           disabled={isSubmitting}
-          maxLength={12}
+          maxLength={6}
+          helpText="Enter the 6-digit code from the password-reset email."
         />
 
         <PasswordField

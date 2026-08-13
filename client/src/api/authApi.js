@@ -134,3 +134,19 @@ export const changeUserPassword = ({
     }
   );
 };
+
+export const getMyAuthSessions = () => {
+  return apiRequest("/auth/sessions");
+};
+
+export const revokeAuthSession = (sessionId) => {
+  return apiRequest(`/auth/sessions/${sessionId}`, {
+    method: "DELETE",
+  });
+};
+
+export const revokeOtherAuthSessions = () => {
+  return apiRequest("/auth/sessions/others", {
+    method: "DELETE",
+  });
+};

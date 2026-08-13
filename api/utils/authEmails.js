@@ -1,5 +1,10 @@
 import { sendEmail } from "./mailer.js";
 
+import {
+  recordAuthenticationEmailFailure,
+  recordAuthenticationEmailSuccess,
+} from "../services/authenticationEmailMonitorService.js";
+
 const getExpiryMinutes = () => {
   const value = Number.parseInt(process.env.OTP_EXPIRES_MINUTES || "10", 10);
   return Number.isInteger(value) && value > 0 ? value : 10;
@@ -29,32 +34,49 @@ const createOtpHtml = ({ title, message, otp }) => `
 </html>
 `;
 
+const sendMonitoredAuthenticationEmail = async ({ purpose, message }) => {
+  try {
+    const result = await sendEmail(message);
+    await recordAuthenticationEmailSuccess({ purpose });
+    return result;
+  } catch (error) {
+    await recordAuthenticationEmailFailure({ purpose, error });
+    throw error;
+  }
+};
+
 export const sendVerificationOtpEmail = async ({ email, otp }) => {
   const expiryMinutes = getExpiryMinutes();
 
-  return sendEmail({
-    to: email,
-    subject: "Verify your EconLLS account",
-    text: `Your EconLLS verification code is ${otp}. It expires in ${expiryMinutes} minutes.`,
-    html: createOtpHtml({
-      title: "Verify your EconLLS account",
-      message: "Enter the following verification code to complete your registration.",
-      otp,
-    }),
+  return sendMonitoredAuthenticationEmail({
+    purpose: "email_verification",
+    message: {
+      to: email,
+      subject: "Verify your EconLLS account",
+      text: `Your EconLLS verification code is ${otp}. It expires in ${expiryMinutes} minutes.`,
+      html: createOtpHtml({
+        title: "Verify your EconLLS account",
+        message: "Enter the following verification code to complete your registration.",
+        otp,
+      }),
+    },
   });
 };
 
 export const sendPasswordResetOtpEmail = async ({ email, otp }) => {
   const expiryMinutes = getExpiryMinutes();
 
-  return sendEmail({
-    to: email,
-    subject: "Reset your EconLLS password",
-    text: `Your EconLLS password reset code is ${otp}. It expires in ${expiryMinutes} minutes.`,
-    html: createOtpHtml({
-      title: "Reset your password",
-      message: "Enter the following code to reset your EconLLS password.",
-      otp,
-    }),
+  return sendMonitoredAuthenticationEmail({
+    purpose: "password_reset",
+    message: {
+      to: email,
+      subject: "Reset your EconLLS password",
+      text: `Your EconLLS password reset code is ${otp}. It expires in ${expiryMinutes} minutes.`,
+      html: createOtpHtml({
+        title: "Reset your password",
+        message: "Enter the following code to reset your EconLLS password.",
+        otp,
+      }),
+    },
   });
 };

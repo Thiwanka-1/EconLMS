@@ -106,6 +106,10 @@ Generate fresh production values; do not reuse UAT values:
 
 - `JWT_SECRET`: at least 32 random bytes.
 - `OTP_HASH_SECRET`: a different random value.
+- `PASSWORD_RESET_MAX_ATTEMPTS=5`: invalidates a reset code after five failed entries.
+- `AUTH_MAX_ACTIVE_SESSIONS=10`: limits simultaneous devices per account.
+- `AUTH_EMAIL_FAILURE_ALERT_THRESHOLD=3`: warns administrators after repeated authentication-email failures.
+- `AUTH_EMAIL_FAILURE_ALERT_COOLDOWN_MINUTES=60`: prevents duplicate warning floods.
 - `ZOOM_LINK_ENCRYPTION_KEY`: exactly 32 random bytes encoded as 64 hex
   characters.
 - Gmail App Password.

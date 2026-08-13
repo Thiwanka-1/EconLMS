@@ -34,7 +34,10 @@ const getCookieMaxAgeMs = () => {
 };
 
 export const generateAuthToken = (
-  user
+  user,
+  {
+    sessionId,
+  } = {}
 ) => {
   if (!process.env.JWT_SECRET) {
     throw new Error(
@@ -48,6 +51,12 @@ export const generateAuthToken = (
     );
   }
 
+  if (!sessionId) {
+    throw new Error(
+      "An authentication session is required to generate a token."
+    );
+  }
+
   return jwt.sign(
     {
       sub: user._id.toString(),
@@ -57,6 +66,7 @@ export const generateAuthToken = (
        * previously issued tokens.
        */
       ver: user.authVersion || 0,
+      sid: sessionId.toString(),
     },
 
     process.env.JWT_SECRET,
