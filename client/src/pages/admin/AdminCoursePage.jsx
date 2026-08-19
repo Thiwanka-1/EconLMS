@@ -1183,13 +1183,14 @@ export default function AdminCoursePage() {
               <FormField
                 id="thumbnailUrl"
                 label="Thumbnail URL"
-                type="url"
                 value={
                   courseForm.thumbnailUrl
                 }
                 onChange={
                   handleCourseChange
                 }
+                placeholder="/course-thumbnails/example.webp or https://..."
+                helpText="Use a same-site path beginning with / or a complete HTTPS image URL."
               />
             </div>
           </div>
