@@ -1,0 +1,33 @@
+[Unit]
+Description=EconLMS encrypted MongoDB backup
+Documentation=file:/opt/econlms/docs/MONGODB_BACKUP_AND_RESTORE.md
+Wants=network-online.target
+After=network-online.target
+AssertPathExists=/etc/econlms/mongodb-backup.env
+AssertPathExists=/etc/econlms/mongodump.yml
+AssertPathExists=/etc/econlms/mongodb-backup.passphrase
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+ExecStart=/usr/local/sbin/econlms-mongodb-backup
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/backups/econlms /run/lock
+TimeoutStartSec=2h

@@ -69,10 +69,17 @@ rotation so logs cannot fill the boot disk.
 
 ## Backups and updates
 
-Create an automated MongoDB backup outside the VM and test a restore before
-production launch. Google Drive stores uploaded files, but MongoDB contains the
-IDs and business records required to find them; backing up only Drive is not
-enough.
+Install the encrypted MongoDB backup service in `deploy/oracle/backup` and
+follow `docs/MONGODB_BACKUP_AND_RESTORE.md`. It creates daily local encrypted
+archives, copies them to private Oracle Object Storage with daily/weekly/monthly
+retention classes, and includes a no-write verifier and isolated restore-drill
+instructions. Do not enable the timer until a manual backup has uploaded both
+the encrypted archive and checksum and a downloaded copy has been verified.
+
+Google Drive stores uploaded files, but MongoDB contains the IDs and business
+records required to find them; backing up only Drive is not enough. The backup
+encryption passphrase must also exist in the client's password manager and an
+offline recovery record, because the VM copy is lost if the VM is lost.
 
 For updates: back up MongoDB, pull the reviewed commit, run `npm ci`, rebuild
 the client, restart `econlms-api`, then check the health endpoint and one admin

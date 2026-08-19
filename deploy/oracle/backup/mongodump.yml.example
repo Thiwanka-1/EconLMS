@@ -1,0 +1,5 @@
+# Copy to /etc/econlms/mongodump.yml and set owner root:root and mode 0600.
+# Use a dedicated Atlas database user. Percent-encode special characters in
+# the username/password. Never commit the completed file.
+uri: "mongodb+srv://BACKUP_USERNAME:URL_ENCODED_PASSWORD@CLUSTER.mongodb.net/?retryWrites=true&w=majority"
+

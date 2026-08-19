@@ -23,13 +23,16 @@ Audit date: 12 August 2026.
   vulnerabilities on the audit date.
 - API tests, client tests, lint, and the production frontend build pass. Lint
   has three existing Fast Refresh organization warnings, not runtime errors.
+- Added an encrypted MongoDB backup/verification systemd timer, private Oracle
+  Object Storage retention design, and isolated restore-drill runbook.
 
 ## Required before production
 
 1. Complete the account/secret migration in
    `PRODUCTION_HANDOVER_CHECKLIST.md`.
-2. Set up tested MongoDB backups. Atlas Free does not provide normal managed
-   backups.
+2. Activate the repository's MongoDB backup timer on Oracle, verify a
+   downloaded Object Storage copy, and complete the documented isolated
+   restore drill. Atlas Free does not provide normal managed backups.
 3. Deploy behind HTTPS and use the production cookie/origin values from the
    Oracle guide.
 4. Add the exact `ZOOM_REQUIRED_AUTHENTICATION_OPTION` for the client's Zoom

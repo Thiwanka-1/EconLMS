@@ -247,12 +247,15 @@ Never set `BILLING_CRON_TEST_MODE=true` or `TEST_BILLING_DATE` in production.
 MongoDB and Google Drive must both be protected. Drive contains private files;
 MongoDB contains the business records and Drive file IDs.
 
-1. Install MongoDB Database Tools.
-2. Run a daily encrypted `mongodump --archive --gzip` using credentials read
-   from a root-only file, not command history.
-3. Copy backups off the VM, for example to client-controlled object storage.
-4. Retain multiple daily and monthly copies according to the client's policy.
-5. Perform and document a test `mongorestore` before launch and periodically.
+The repository now includes a systemd backup service and timer. Follow
+[`MONGODB_BACKUP_AND_RESTORE.md`](MONGODB_BACKUP_AND_RESTORE.md) to:
+
+1. Create a private Oracle Object Storage bucket and VM instance-principal
+   policy.
+2. Install MongoDB Database Tools and the OCI CLI.
+3. Create root-only MongoDB and encryption configuration.
+4. Test one manual encrypted upload before enabling the daily timer.
+5. Verify a downloaded backup and perform an isolated restore drill.
 
 Free Atlas deployments do not include normal managed backups. A backup that
 has never been restored is not considered verified.

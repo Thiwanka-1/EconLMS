@@ -134,5 +134,7 @@ Store the Oracle API environment at `/etc/econlms/api.env`, mode `640`, owned by
 - [ ] Recorded lesson resume and two-minute rewind lock work after refresh.
 - [ ] Student, rejected-payment, old-live-class, archived-lesson, old-enrolment,
   and archived-course cleanup work on test records.
-- [ ] MongoDB backup and restore have been tested.
+- [ ] Encrypted MongoDB backup reaches private Oracle Object Storage.
+- [ ] Backup passphrase has password-manager and protected offline copies.
+- [ ] A downloaded backup passes verification and an isolated restore drill.
 - [ ] API restart and VM reboot automatically restore the service.
