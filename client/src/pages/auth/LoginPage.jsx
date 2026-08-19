@@ -25,6 +25,28 @@ import {
   getRoleHome,
 } from "../../utils/roleHome.js";
 
+const getPostLoginDestination = (
+  user,
+  returnTo
+) => {
+  const normalizedReturnTo =
+    typeof returnTo === "string"
+      ? returnTo.trim()
+      : "";
+
+  if (
+    user.role === "student" &&
+    normalizedReturnTo.startsWith(
+      "/student/"
+    ) &&
+    !normalizedReturnTo.startsWith("//")
+  ) {
+    return normalizedReturnTo;
+  }
+
+  return getRoleHome(user.role);
+};
+
 export default function LoginPage() {
   const location =
     useLocation();
@@ -90,7 +112,10 @@ export default function LoginPage() {
       });
 
       navigate(
-        getRoleHome(user.role),
+        getPostLoginDestination(
+          user,
+          location.state?.returnTo
+        ),
         {
           replace: true,
         }
