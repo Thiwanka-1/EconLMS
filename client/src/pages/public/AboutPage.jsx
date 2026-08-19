@@ -35,6 +35,30 @@ export default function AboutPage() {
 
   return (
     <main className="overflow-hidden">
+      <section className="bg-white">
+        <div className="mx-auto max-w-7xl px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6 lg:px-8 lg:pb-16">
+          <a
+            href={teacherMentorBanner}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open the teacher profile banner at full size"
+            className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 sm:rounded-[2rem]"
+          >
+            <img
+              src={teacherMentorBanner}
+              alt="Udara Weerasinghe: teacher, mentor and inspirer for Ordinary Level Commerce and Advanced Level Accounting students"
+              fetchPriority="high"
+              decoding="async"
+              className="h-auto w-full transition duration-500 group-hover:scale-[1.005]"
+            />
+          </a>
+
+          <p className="mt-3 text-center text-xs font-semibold text-slate-500 sm:hidden">
+            Tap the banner to view it at full size.
+          </p>
+        </div>
+      </section>
+
       <section className="relative border-b border-slate-200 bg-slate-950 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(43,131,255,0.3),transparent_34%),radial-gradient(circle_at_85%_80%,rgba(14,165,233,0.14),transparent_30%)]" />
 
@@ -49,29 +73,6 @@ export default function AboutPage() {
 
           <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
             {tagline || `${platformName} brings lessons, live teaching and learning updates into one focused digital experience.`}
-          </p>
-        </div>
-      </section>
-
-      <section className="bg-white">
-        <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8 lg:pt-16">
-          <a
-            href={teacherMentorBanner}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open the teacher profile banner at full size"
-            className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 sm:rounded-[2rem]"
-          >
-            <img
-              src={teacherMentorBanner}
-              alt="Udara Weerasinghe: teacher, mentor and inspirer for Ordinary Level Commerce and Advanced Level Accounting students"
-              decoding="async"
-              className="h-auto w-full transition duration-500 group-hover:scale-[1.005]"
-            />
-          </a>
-
-          <p className="mt-3 text-center text-xs font-semibold text-slate-500 sm:hidden">
-            Tap the banner to view it at full size.
           </p>
         </div>
       </section>
