@@ -20,10 +20,11 @@ in root-only files under `/etc/econlms`.
 - Keeps only a short three-day encrypted cache on the VM.
 - Never automatically restores or deletes production database data.
 
-The conservative free-tier retention is 7 daily, 35 weekly and 365 monthly
-days. That keeps roughly 24-26 full backup copies and leaves headroom inside
-Oracle's 20 GB allowance while the application uses an Atlas Free database.
-Recalculate it if the database tier or backup size grows.
+The conservative free-tier retention is 7 daily, 28 weekly and 180 monthly
+days. That keeps roughly 17-19 full backup copies and leaves headroom inside
+the tenancy's displayed 10 GiB Standard Object Storage allowance while the
+application uses an Atlas Free database. Recalculate it if the database tier
+or backup size grows.
 
 ## 1. Create a private Object Storage bucket
 
@@ -73,14 +74,27 @@ and [Object Storage security guidance](https://docs.oracle.com/en-us/iaas/Conten
 
 ## 3. Add lifecycle retention rules
 
+Before creating lifecycle rules, authorize Oracle's regional Object Storage
+service to execute them. Create a second policy in the tenancy root named
+`econlms-object-lifecycle-service-policy` with this statement:
+
+```text
+Allow service objectstorage-ap-mumbai-1 to manage object-family in tenancy where all {target.bucket.name='econlms-backups', any {request.permission='BUCKET_INSPECT', request.permission='BUCKET_READ', request.permission='OBJECT_INSPECT', request.permission='OBJECT_UPDATE_TIER', request.permission='OBJECT_DELETE', request.permission='OBJECT_VERSION_DELETE'}}
+```
+
+This principal is Oracle's Object Storage service in Mumbai, not the VM. The
+statement is restricted to the backup bucket and the permissions Oracle lists
+for lifecycle processing. Wait several minutes for IAM propagation if the
+Console initially reports `InsufficientServicePermissions`.
+
 On the private bucket, open **Lifecycle Policy Rules** and create three object
 deletion rules:
 
 | Object-name prefix | Delete after |
 | --- | ---: |
 | `mongodb/daily/` | 7 days |
-| `mongodb/weekly/` | 35 days |
-| `mongodb/monthly/` | 365 days |
+| `mongodb/weekly/` | 28 days |
+| `mongodb/monthly/` | 180 days |
 
 Confirm each prefix carefully before enabling it. Object lifecycle deletion is
 irreversible. It is performed by Oracle, not by the VM backup credential. See
