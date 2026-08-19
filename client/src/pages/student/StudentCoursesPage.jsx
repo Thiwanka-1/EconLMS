@@ -32,14 +32,16 @@ const CourseThumbnail = ({
     return (
       <img
         src={course.thumbnailUrl}
-        alt=""
-        className="h-48 w-full object-cover"
+        alt={`${course.title} course banner`}
+        loading="lazy"
+        decoding="async"
+        className="aspect-[3/2] w-full bg-slate-950 object-contain"
       />
     );
   }
 
   return (
-    <div className="flex h-48 items-center justify-center bg-gradient-to-br from-brand-100 via-brand-50 to-slate-100">
+    <div className="flex aspect-[3/2] w-full items-center justify-center bg-gradient-to-br from-brand-100 via-brand-50 to-slate-100">
       <span className="text-4xl font-black text-brand-700">
         {String(
           course.code ||

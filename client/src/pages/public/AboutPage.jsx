@@ -6,6 +6,8 @@ import {
   usePlatformSettings,
 } from "../../settings/usePlatformSettings.js";
 
+import teacherMentorBanner from "../../assets/teacher-mentor-banner.png";
+
 const pillars = [
   {
     number: "01",
@@ -42,7 +44,7 @@ export default function AboutPage() {
           </p>
 
           <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-[-0.04em] sm:text-6xl lg:text-7xl">
-            Economics learning, organized around the student.
+            Accounting learning, organized around the student.
           </h1>
 
           <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
@@ -52,7 +54,30 @@ export default function AboutPage() {
       </section>
 
       <section className="bg-white">
-        <div className="mx-auto grid max-w-7xl gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8 lg:pt-16">
+          <a
+            href={teacherMentorBanner}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open the teacher profile banner at full size"
+            className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 sm:rounded-[2rem]"
+          >
+            <img
+              src={teacherMentorBanner}
+              alt="Udara Weerasinghe: teacher, mentor and inspirer for Ordinary Level Commerce and Advanced Level Accounting students"
+              decoding="async"
+              className="h-auto w-full transition duration-500 group-hover:scale-[1.005]"
+            />
+          </a>
+
+          <p className="mt-3 text-center text-xs font-semibold text-slate-500 sm:hidden">
+            Tap the banner to view it at full size.
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-white">
+        <div className="mx-auto grid max-w-7xl gap-14 px-4 py-16 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8 lg:py-24">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.18em] text-brand-700">
               Why we exist
@@ -64,7 +89,7 @@ export default function AboutPage() {
 
           <div className="space-y-6 text-lg leading-8 text-slate-600">
             <p>
-              {platformName} gives economics students a dependable home for recorded lessons, scheduled live classes, payment progress and essential notifications.
+              {platformName} gives commerce and accounting students a dependable home for recorded lessons, scheduled live classes, payment progress and essential notifications.
             </p>
             <p>
               The portal is designed to make everyday learning tasks simple on phones, tablets and computers while keeping student access personal and accountable.

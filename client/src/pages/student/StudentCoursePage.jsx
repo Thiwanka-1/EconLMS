@@ -542,11 +542,12 @@ export default function StudentCoursePage() {
                 src={
                   course.thumbnailUrl
                 }
-                alt=""
-                className="max-h-96 w-full object-cover"
+                alt={`${course.title} course banner`}
+                decoding="async"
+                className="aspect-[3/2] w-full bg-slate-950 object-contain"
               />
             ) : (
-              <div className="flex h-64 items-center justify-center bg-gradient-to-br from-brand-100 via-brand-50 to-slate-100">
+              <div className="flex aspect-[3/2] w-full items-center justify-center bg-gradient-to-br from-brand-100 via-brand-50 to-slate-100">
                 <span className="text-6xl font-black text-brand-700">
                   {String(
                     course.code ||
