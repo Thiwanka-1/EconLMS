@@ -37,25 +37,15 @@ export default function AboutPage() {
     <main className="overflow-hidden">
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6 lg:px-8 lg:pb-16">
-          <a
-            href={teacherMentorBanner}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open the teacher profile banner at full size"
-            className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 sm:rounded-[2rem]"
-          >
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 sm:rounded-[2rem]">
             <img
               src={teacherMentorBanner}
               alt="Udara Weerasinghe: teacher, mentor and inspirer for Ordinary Level Commerce and Advanced Level Accounting students"
               fetchPriority="high"
               decoding="async"
-              className="h-auto w-full transition duration-500 group-hover:scale-[1.005]"
+              className="h-auto w-full"
             />
-          </a>
-
-          <p className="mt-3 text-center text-xs font-semibold text-slate-500 sm:hidden">
-            Tap the banner to view it at full size.
-          </p>
+          </div>
         </div>
       </section>
 

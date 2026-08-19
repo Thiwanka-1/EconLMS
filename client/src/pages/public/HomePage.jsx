@@ -65,25 +65,15 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(43,131,255,0.16),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(15,23,42,0.08),transparent_35%)]" />
 
         <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-4 sm:px-6 sm:pb-20 sm:pt-6 lg:px-8 lg:pb-24">
-          <a
-            href={masterAccountingBanner}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open the Master Accounting programme banner at full size"
-            className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 sm:rounded-[2rem]"
-          >
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 sm:rounded-[2rem]">
             <img
               src={masterAccountingBanner}
               alt="Master Accounting with Udara Weerasinghe: clear concepts, exam focus, practical learning and achievement"
               fetchPriority="high"
               decoding="async"
-              className="h-auto w-full transition duration-500 group-hover:scale-[1.005]"
+              className="h-auto w-full"
             />
-          </a>
-
-          <p className="mt-3 text-center text-xs font-semibold text-slate-500 sm:hidden">
-            Tap the banner to view it at full size.
-          </p>
+          </div>
 
           <div className="mt-12 max-w-4xl sm:mt-16">
             <span className="inline-flex rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-brand-700">
