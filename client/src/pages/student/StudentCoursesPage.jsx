@@ -226,7 +226,7 @@ export default function StudentCoursesPage() {
         </p>
 
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-          Economics courses
+          Accounting courses
         </h1>
 
         <p className="mt-3 max-w-2xl leading-7 text-slate-600">
@@ -441,7 +441,7 @@ export default function StudentCoursesPage() {
 
                   <p className="mt-2 text-sm font-semibold text-slate-500">
                     {course.subject ||
-                      "Economics"}{" "}
+                      "Accounting"}{" "}
                     ·{" "}
                     {course.academicLevel}
                   </p>

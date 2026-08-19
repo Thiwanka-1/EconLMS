@@ -555,7 +555,7 @@ export default function AdminSettingsPage() {
       <div className="mt-8 space-y-7">
         <SettingsSection
           title="Branding"
-          description="These values are displayed on public and authenticated EconLLS pages."
+          description="These values are displayed on public and authenticated AccountingLMS pages."
         >
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField

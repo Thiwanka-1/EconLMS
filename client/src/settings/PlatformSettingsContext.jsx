@@ -22,8 +22,8 @@ import {
 
 const DEFAULT_SETTINGS = {
   branding: {
-    platformName: "EconLLS",
-    tagline: "Economics Learning Portal",
+    platformName: "AccountingLMS",
+    tagline: "Accounting Learning Portal",
   },
 
   contact: {
@@ -39,7 +39,7 @@ const DEFAULT_SETTINGS = {
 
   maintenanceNotice: {
     enabled: false,
-    message: "EconLLS is currently undergoing maintenance.",
+    message: "AccountingLMS is currently undergoing maintenance.",
   },
 
   paymentDetails: {
