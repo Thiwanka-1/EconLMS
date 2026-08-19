@@ -19,6 +19,8 @@ in root-only files under `/etc/econlms`.
   `mongodb/weekly/`, and first-of-month copies in `mongodb/monthly/`.
 - Keeps only a short three-day encrypted cache on the VM.
 - Never automatically restores or deletes production database data.
+- Rejects suspiciously tiny dumps instead of uploading an empty database as a
+  successful backup.
 
 The conservative free-tier retention is 7 daily, 28 weekly and 180 monthly
 days. That keeps roughly 17-19 full backup copies and leaves headroom inside

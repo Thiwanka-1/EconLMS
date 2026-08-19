@@ -41,6 +41,7 @@ set +a
 : "${OCI_CLI_BIN:=oci}"
 : "${OCI_OBJECT_PREFIX:=mongodb}"
 : "${LOCAL_RETENTION_DAYS:=3}"
+: "${MIN_BACKUP_BYTES:=1024}"
 : "${OPENSSL_PBKDF2_ITERATIONS:=200000}"
 
 require_value MONGODB_DATABASE
@@ -52,6 +53,9 @@ require_value OCI_NAMESPACE
     fail "MONGODB_DATABASE may contain only letters, numbers, underscores and hyphens."
 [[ "${LOCAL_RETENTION_DAYS}" =~ ^[0-9]+$ ]] ||
     fail "LOCAL_RETENTION_DAYS must be a non-negative integer."
+[[ "${MIN_BACKUP_BYTES}" =~ ^[0-9]+$ ]] ||
+    fail "MIN_BACKUP_BYTES must be a positive integer."
+(( MIN_BACKUP_BYTES > 0 )) || fail "MIN_BACKUP_BYTES must be greater than zero."
 [[ "${OPENSSL_PBKDF2_ITERATIONS}" =~ ^[0-9]+$ ]] ||
     fail "OPENSSL_PBKDF2_ITERATIONS must be a positive integer."
 (( OPENSSL_PBKDF2_ITERATIONS > 0 )) ||
@@ -100,7 +104,9 @@ mongodump \
     --archive="${raw_archive}" \
     --gzip
 
-[[ -s "${raw_archive}" ]] || fail "mongodump produced an empty archive."
+archive_size="$(stat -c '%s' "${raw_archive}")"
+(( archive_size >= MIN_BACKUP_BYTES )) ||
+    fail "mongodump archive is only ${archive_size} bytes; check MONGODB_DATABASE and backup-user permissions."
 log "Running a no-write mongorestore dry run."
 mongorestore \
     --config="${MONGODB_CONFIG_FILE}" \
