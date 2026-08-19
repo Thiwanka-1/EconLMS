@@ -20,9 +20,10 @@ in root-only files under `/etc/econlms`.
 - Keeps only a short three-day encrypted cache on the VM.
 - Never automatically restores or deletes production database data.
 
-Recommended Object Storage retention is 14 daily, 90 weekly and 400 monthly
-days. Adjust it only after agreeing a retention policy with the client and
-checking storage usage.
+The conservative free-tier retention is 7 daily, 35 weekly and 365 monthly
+days. That keeps roughly 24-26 full backup copies and leaves headroom inside
+Oracle's 20 GB allowance while the application uses an Atlas Free database.
+Recalculate it if the database tier or backup size grows.
 
 ## 1. Create a private Object Storage bucket
 
@@ -77,9 +78,9 @@ deletion rules:
 
 | Object-name prefix | Delete after |
 | --- | ---: |
-| `mongodb/daily/` | 14 days |
-| `mongodb/weekly/` | 90 days |
-| `mongodb/monthly/` | 400 days |
+| `mongodb/daily/` | 7 days |
+| `mongodb/weekly/` | 35 days |
+| `mongodb/monthly/` | 365 days |
 
 Confirm each prefix carefully before enabling it. Object lifecycle deletion is
 irreversible. It is performed by Oracle, not by the VM backup credential. See
