@@ -281,7 +281,7 @@ export default function HomePage() {
                 href="#courses"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-400 px-7 py-4 text-sm font-black text-slate-950 shadow-xl shadow-amber-950/20 transition hover:-translate-y-0.5 hover:bg-amber-300"
               >
-                Explore courses
+                Our courses
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-5 w-5">
                   <path d="M5 12h14M14 7l5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>

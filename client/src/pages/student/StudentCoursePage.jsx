@@ -568,7 +568,7 @@ export default function StudentCoursePage() {
 
                   <dd className="mt-2 font-bold text-slate-950">
                     {course.subject ||
-                      "Economics"}
+                      "Accounting"}
                   </dd>
                 </div>
 

@@ -42,7 +42,7 @@ export default function AuthPageShell({
           </p>
 
           <h1 className="mt-6 text-5xl font-black tracking-[-0.04em]">
-            Learn economics through one
+            Learn accounting through one
             secure platform.
           </h1>
 

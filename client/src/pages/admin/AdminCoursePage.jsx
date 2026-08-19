@@ -109,7 +109,7 @@ const createCourseForm = (
     course.code || "",
 
   subject:
-    course.subject || "Economics",
+    course.subject || "Accounting",
 
   academicLevel:
     course.academicLevel || "",

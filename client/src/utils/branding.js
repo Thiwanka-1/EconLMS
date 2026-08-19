@@ -2,7 +2,7 @@ export const getBrandInitials = (
   platformName
 ) => {
   const name = String(
-    platformName || "EconLLS"
+    platformName || "AccountingLMS"
   ).trim();
 
   const capitalLetters =
@@ -20,5 +20,5 @@ export const getBrandInitials = (
     return `${words[0][0]}${words[1][0]}`.toUpperCase();
   }
 
-  return name.slice(0, 2).toUpperCase() || "EL";
+  return name.slice(0, 2).toUpperCase() || "AL";
 };

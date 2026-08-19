@@ -103,7 +103,7 @@ const prepareJoinWindow = (
     popup.opener = null;
 
     popup.document.title =
-      "Opening EconLLS Live Class";
+      "Opening AccountingLMS Live Class";
 
     popup.document.body.style.margin =
       "0";
@@ -131,7 +131,7 @@ const prepareJoinWindow = (
             margin:12px 0 0;
             color:#64748b;
           ">
-            EconLLS is requesting your
+            AccountingLMS is requesting your
             secure Zoom link.
           </p>
         </div>

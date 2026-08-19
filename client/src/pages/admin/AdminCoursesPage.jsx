@@ -31,7 +31,7 @@ import {
 const emptyCourseForm = {
   title: "",
   code: "",
-  subject: "Economics",
+  subject: "Accounting",
   academicLevel: "",
   category: "grade",
   paymentPlan: "monthly",

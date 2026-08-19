@@ -150,10 +150,10 @@ export default function LoginPage() {
     <AuthPageShell
       eyebrow="Welcome back"
       title="Sign in"
-      description="Enter your registered email and password to access EconLLS."
+      description="Enter your registered email and password to access AccountingLMS."
       footer={
         <p>
-          New to EconLLS?{" "}
+          New to AccountingLMS?{" "}
           <Link
             to="/signup"
             className="font-black text-brand-700 hover:text-brand-900"
