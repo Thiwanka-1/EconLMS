@@ -4,7 +4,7 @@ const brandingSchema = new mongoose.Schema(
   {
     platformName: {
       type: String,
-      default: "EconLLS",
+      default: "Accounting With Udara",
       trim: true,
       minlength: 2,
       maxlength: 100,
@@ -12,7 +12,7 @@ const brandingSchema = new mongoose.Schema(
 
     tagline: {
       type: String,
-      default: "Economics Learning Portal",
+      default: "Accounting and Commerce Learning Portal",
       trim: true,
       maxlength: 200,
     },
@@ -95,7 +95,7 @@ const maintenanceNoticeSchema =
       message: {
         type: String,
         default:
-          "EconLLS is currently undergoing maintenance.",
+          "Accounting With Udara is currently undergoing maintenance.",
         trim: true,
         maxlength: 500,
       },

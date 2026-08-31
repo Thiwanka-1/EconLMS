@@ -1,6 +1,20 @@
 import PlatformSetting from "../models/PlatformSetting.js";
 
 const CACHE_DURATION_MS = 30 * 1000;
+const PLATFORM_NAME = "Accounting With Udara";
+const PLATFORM_TAGLINE =
+  "Accounting and Commerce Learning Portal";
+
+const LEGACY_PLATFORM_NAMES = new Set([
+  "econlls",
+  "econlms",
+  "accountinglms",
+]);
+
+const LEGACY_PLATFORM_TAGLINES = new Set([
+  "economics learning portal",
+  "accounting learning portal",
+]);
 
 let cachedSettings = null;
 let cacheExpiresAt = 0;
@@ -25,7 +39,7 @@ export const getPlatformSettings =
       return cachedSettings;
     }
 
-    const settings =
+    let settings =
       await PlatformSetting.findOneAndUpdate(
         {
           singletonKey: "platform",
@@ -42,6 +56,55 @@ export const getPlatformSettings =
           runValidators: true,
         }
       ).lean();
+
+    const legacyBrandingUpdates = {};
+    const platformName = String(
+      settings?.branding?.platformName || ""
+    ).trim();
+    const tagline = String(
+      settings?.branding?.tagline || ""
+    ).trim();
+
+    if (
+      !platformName ||
+      LEGACY_PLATFORM_NAMES.has(
+        platformName.toLowerCase()
+      )
+    ) {
+      legacyBrandingUpdates[
+        "branding.platformName"
+      ] = PLATFORM_NAME;
+    }
+
+    if (
+      !tagline ||
+      LEGACY_PLATFORM_TAGLINES.has(
+        tagline.toLowerCase()
+      )
+    ) {
+      legacyBrandingUpdates[
+        "branding.tagline"
+      ] = PLATFORM_TAGLINE;
+    }
+
+    if (
+      Object.keys(legacyBrandingUpdates)
+        .length > 0
+    ) {
+      settings =
+        await PlatformSetting.findOneAndUpdate(
+          {
+            singletonKey: "platform",
+          },
+          {
+            $set: legacyBrandingUpdates,
+          },
+          {
+            returnDocument: "after",
+            runValidators: true,
+          }
+        ).lean();
+    }
 
     cachedSettings = settings;
     cacheExpiresAt =
