@@ -242,6 +242,10 @@ export const getStudentPlatformSettings =
 
 export const getAdminPlatformSettings =
   asyncHandler(async (req, res) => {
+    await getPlatformSettings({
+      forceRefresh: true,
+    });
+
     const settings =
       await PlatformSetting.findOne({
         singletonKey: "platform",
@@ -249,22 +253,6 @@ export const getAdminPlatformSettings =
         "updatedBy",
         "firstName lastName email"
       );
-
-    if (!settings) {
-      await getPlatformSettings({
-        forceRefresh: true,
-      });
-
-      const createdSettings =
-        await PlatformSetting.findOne({
-          singletonKey: "platform",
-        });
-
-      return res.status(200).json({
-        success: true,
-        settings: createdSettings,
-      });
-    }
 
     res.status(200).json({
       success: true,

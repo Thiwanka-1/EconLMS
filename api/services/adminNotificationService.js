@@ -143,7 +143,7 @@ export const notifyAdminsOfStudentRegistration = async ({
   return createNotificationsForActiveAdmins({
     type: "student_registered",
     title: "New student registration",
-    message: `${studentName} completed email verification and registered with EconLLS.`,
+    message: `${studentName} completed email verification and registered with Accounting With Udara.`,
     actionUrl: `/admin/students/${student._id}`,
     data: {
       studentId: student._id,

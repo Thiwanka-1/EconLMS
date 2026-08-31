@@ -41,7 +41,7 @@ export const getZoomMeetingSecurityIssues = (
 
   if (settings.approval_type !== 1) {
     issues.push(
-      "Registration must use manual approval so only EconLMS-approved students are admitted."
+      "Registration must use manual approval so only Accounting With Udara-approved students are admitted."
     );
   }
 
@@ -82,7 +82,7 @@ export const getZoomMeetingSecurityIssues = (
     authenticationOption !== requiredOption
   ) {
     issues.push(
-      "The meeting does not use the Zoom authentication profile configured for EconLMS."
+      "The meeting does not use the Zoom authentication profile configured for Accounting With Udara."
     );
   }
 

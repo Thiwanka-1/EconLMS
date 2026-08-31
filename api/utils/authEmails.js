@@ -52,10 +52,10 @@ export const sendVerificationOtpEmail = async ({ email, otp }) => {
     purpose: "email_verification",
     message: {
       to: email,
-      subject: "Verify your EconLLS account",
-      text: `Your EconLLS verification code is ${otp}. It expires in ${expiryMinutes} minutes.`,
+      subject: "Verify your Accounting With Udara account",
+      text: `Your Accounting With Udara verification code is ${otp}. It expires in ${expiryMinutes} minutes.`,
       html: createOtpHtml({
-        title: "Verify your EconLLS account",
+        title: "Verify your Accounting With Udara account",
         message: "Enter the following verification code to complete your registration.",
         otp,
       }),
@@ -70,11 +70,11 @@ export const sendPasswordResetOtpEmail = async ({ email, otp }) => {
     purpose: "password_reset",
     message: {
       to: email,
-      subject: "Reset your EconLLS password",
-      text: `Your EconLLS password reset code is ${otp}. It expires in ${expiryMinutes} minutes.`,
+      subject: "Reset your Accounting With Udara password",
+      text: `Your Accounting With Udara password reset code is ${otp}. It expires in ${expiryMinutes} minutes.`,
       html: createOtpHtml({
         title: "Reset your password",
-        message: "Enter the following code to reset your EconLLS password.",
+        message: "Enter the following code to reset your Accounting With Udara password.",
         otp,
       }),
     },

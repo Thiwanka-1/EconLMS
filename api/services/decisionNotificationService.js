@@ -83,7 +83,7 @@ export const processPaymentDecisionSideEffects =
 
       const courseTitle =
         payment.course?.title ||
-        "EconLLS course";
+        "Accounting With Udara course";
 
       const periodLabel =
         payment.billingPeriod?.label ||

@@ -204,8 +204,8 @@ app.get(
 
       message:
         databaseReady
-          ? "EconLLS API is healthy."
-          : "EconLLS API cannot reach its database.",
+          ? "Accounting With Udara API is healthy."
+          : "Accounting With Udara API cannot reach its database.",
 
       dependencies: {
         mongodb: databaseReady ? "connected" : "unavailable",
@@ -442,7 +442,7 @@ const startServer = async () => {
       port,
       () => {
         console.log(
-          `EconLLS API running on port ${port}`
+          `Accounting With Udara API running on port ${port}`
         );
       }
     );

@@ -277,7 +277,7 @@ export const uploadNicImageToDrive =
           ],
 
           description: [
-            "EconLLS NIC document",
+            "Accounting With Udara NIC document",
             `Student ID: ${student._id}`,
             `Student email: ${student.email}`,
             `Uploaded: ${new Date().toISOString()}`,
