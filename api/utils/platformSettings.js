@@ -16,6 +16,12 @@ const LEGACY_PLATFORM_TAGLINES = new Set([
   "accounting learning portal",
 ]);
 
+const LEGACY_MAINTENANCE_MESSAGES = new Set([
+  "econlls is currently undergoing maintenance.",
+  "econlms is currently undergoing maintenance.",
+  "accountinglms is currently undergoing maintenance.",
+]);
+
 let cachedSettings = null;
 let cacheExpiresAt = 0;
 
@@ -64,6 +70,9 @@ export const getPlatformSettings =
     const tagline = String(
       settings?.branding?.tagline || ""
     ).trim();
+    const maintenanceMessage = String(
+      settings?.maintenanceNotice?.message || ""
+    ).trim();
 
     if (
       !platformName ||
@@ -85,6 +94,17 @@ export const getPlatformSettings =
       legacyBrandingUpdates[
         "branding.tagline"
       ] = PLATFORM_TAGLINE;
+    }
+
+    if (
+      !maintenanceMessage ||
+      LEGACY_MAINTENANCE_MESSAGES.has(
+        maintenanceMessage.toLowerCase()
+      )
+    ) {
+      legacyBrandingUpdates[
+        "maintenanceNotice.message"
+      ] = `${PLATFORM_NAME} is currently undergoing maintenance.`;
     }
 
     if (
