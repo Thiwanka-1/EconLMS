@@ -13,7 +13,7 @@ export const notifyStudentOfPaymentSubmission = async ({
   course,
   billingPeriod = null,
 }) => {
-  const courseTitle = course?.title || "EconLLS course";
+  const courseTitle = course?.title || "Accounting With Udara course";
   const periodLabel = billingPeriod?.label || null;
   const actionUrl = "/student/payments";
 

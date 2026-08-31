@@ -103,7 +103,7 @@ const prepareJoinWindow = (
     popup.opener = null;
 
     popup.document.title =
-      "Opening AccountingLMS Live Class";
+      "Opening Accounting With Udara Live Class";
 
     popup.document.body.style.margin =
       "0";
@@ -131,7 +131,7 @@ const prepareJoinWindow = (
             margin:12px 0 0;
             color:#64748b;
           ">
-            AccountingLMS is requesting your
+            Accounting With Udara is requesting your
             secure Zoom link.
           </p>
         </div>

@@ -130,7 +130,7 @@ const createEmailLayout = ({
                         font-weight: 700;
                       "
                     >
-                      EconLLS
+                      Accounting With Udara
                     </div>
 
                     <div
@@ -140,7 +140,7 @@ const createEmailLayout = ({
                         opacity: 0.8;
                       "
                     >
-                      Economics Learning Portal
+                      Accounting and Commerce Learning Portal
                     </div>
                   </td>
                 </tr>
@@ -175,7 +175,7 @@ const createEmailLayout = ({
                       "
                     >
                       This is an automated message
-                      from EconLLS.
+                      from Accounting With Udara.
                     </p>
                   </td>
                 </tr>
@@ -203,7 +203,7 @@ export const createPaymentApprovedEmail = ({
       : "Your course payment has been approved.";
 
   const subject =
-    "EconLLS payment approved";
+    "Accounting With Udara payment approved";
 
   const text = [
     `Hello ${studentName},`,
@@ -216,7 +216,7 @@ export const createPaymentApprovedEmail = ({
 
   const html = createEmailLayout({
     previewText:
-      "Your EconLLS payment has been approved.",
+      "Your Accounting With Udara payment has been approved.",
 
     heading: "Payment approved",
 
@@ -271,7 +271,7 @@ export const createPaymentRejectedEmail = ({
     "Please review your payment details and submit a clearer payment slip.";
 
   const subject =
-    "Action required: EconLLS payment not approved";
+    "Action required: Accounting With Udara payment not approved";
 
   const text = [
     `Hello ${studentName},`,
@@ -285,7 +285,7 @@ export const createPaymentRejectedEmail = ({
 
   const html = createEmailLayout({
     previewText:
-      "Your EconLLS payment needs attention.",
+      "Your Accounting With Udara payment needs attention.",
 
     heading:
       "Payment submission not approved",
@@ -339,7 +339,7 @@ export const createPaymentReminderEmail = ({
     Number(daysRemaining) === 1
       ? "tomorrow"
       : `in ${daysRemaining} days`;
-  const subject = `EconLLS payment reminder: ${courseTitle}`;
+  const subject = `Accounting With Udara payment reminder: ${courseTitle}`;
 
   const text = [
     `Hello ${studentName},`,
@@ -351,7 +351,7 @@ export const createPaymentReminderEmail = ({
   ].join("\n");
 
   const html = createEmailLayout({
-    previewText: `Your EconLLS payment is due ${timing}.`,
+    previewText: `Your Accounting With Udara payment is due ${timing}.`,
     heading: "Upcoming payment deadline",
     bodyHtml: `
       <p>Hello ${escapeHtml(studentName)},</p>
@@ -428,7 +428,7 @@ export const createPaymentSubmittedEmail = ({
   const target = periodLabel
     ? `${courseTitle} — ${periodLabel}`
     : courseTitle;
-  const subject = "EconLLS payment slip received";
+  const subject = "Accounting With Udara payment slip received";
   const text = [
     `Hello ${studentName},`,
     "",
@@ -455,7 +455,7 @@ export const createPaymentSubmittedEmail = ({
 
 export const createNicSubmittedEmail = ({ student, actionUrl }) => {
   const studentName = getStudentName(student);
-  const subject = "EconLLS NIC image received";
+  const subject = "Accounting With Udara NIC image received";
   const text = [
     `Hello ${studentName},`,
     "",
@@ -488,7 +488,7 @@ export const createNicVerifiedEmail = ({
     getStudentName(student);
 
   const subject =
-    "EconLLS identity document verified";
+    "Accounting With Udara identity document verified";
 
   const text = [
     `Hello ${studentName},`,

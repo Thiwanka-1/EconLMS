@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test --test-isolation=none",
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node init && node index.js",
+    "dev": "node init && nodemon index.js",
     "audit:zoom": "node utils/auditZoomSecurity.js",
     "seed:admin": "node utils/createAdmin.js",
     "seed:courses": "node utils/seedCourses.js",

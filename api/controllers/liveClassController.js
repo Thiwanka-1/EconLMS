@@ -281,7 +281,7 @@ export const createLiveClass =
     if (securityIssues.length > 0) {
       throw new HttpError(
         400,
-        `The Zoom meeting is not secure enough for EconLMS. ${securityIssues.join(
+        `The Zoom meeting is not secure enough for Accounting With Udara. ${securityIssues.join(
           " "
         )}`
       );
@@ -758,7 +758,7 @@ export const refreshLiveClassFromZoom =
     if (securityIssues.length > 0) {
       throw new HttpError(
         400,
-        `The Zoom meeting is not secure enough for EconLMS. ${securityIssues.join(
+        `The Zoom meeting is not secure enough for Accounting With Udara. ${securityIssues.join(
           " "
         )}`
       );
