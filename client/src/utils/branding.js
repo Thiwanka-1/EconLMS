@@ -2,7 +2,7 @@ export const getBrandInitials = (
   platformName
 ) => {
   const name = String(
-    platformName || "AccountingLMS"
+    platformName || "Accounting With Udara"
   ).trim();
 
   const capitalLetters =

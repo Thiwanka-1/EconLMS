@@ -150,10 +150,10 @@ export default function LoginPage() {
     <AuthPageShell
       eyebrow="Welcome back"
       title="Sign in"
-      description="Enter your registered email and password to access AccountingLMS."
+      description="Enter your registered email and password to access Accounting With Udara."
       footer={
         <p>
-          New to AccountingLMS?{" "}
+          New to Accounting With Udara?{" "}
           <Link
             to="/signup"
             className="font-black text-brand-700 hover:text-brand-900"

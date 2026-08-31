@@ -5,7 +5,7 @@
         <div className="mx-auto h-11 w-11 animate-spin rounded-full border-4 border-brand-100 border-t-brand-600" />
 
         <p className="mt-4 text-sm font-medium text-slate-600">
-          Loading AccountingLMS…
+          Loading Accounting With Udara…
         </p>
       </div>
     </div>

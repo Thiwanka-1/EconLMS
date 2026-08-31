@@ -22,8 +22,8 @@ import {
 
 const DEFAULT_SETTINGS = {
   branding: {
-    platformName: "AccountingLMS",
-    tagline: "Accounting Learning Portal",
+    platformName: "Accounting With Udara",
+    tagline: "Accounting and Commerce Learning Portal",
   },
 
   contact: {
@@ -39,7 +39,7 @@ const DEFAULT_SETTINGS = {
 
   maintenanceNotice: {
     enabled: false,
-    message: "AccountingLMS is currently undergoing maintenance.",
+    message: "Accounting With Udara is currently undergoing maintenance.",
   },
 
   paymentDetails: {

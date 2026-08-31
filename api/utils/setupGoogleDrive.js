@@ -9,13 +9,13 @@ const setupGoogleDrive = async () => {
     const paymentFolder =
       await getOrCreateDriveFolder({
         name:
-          "EconLLS Payment Slips",
+          "Accounting With Udara Payment Slips",
       });
 
     const nicFolder =
       await getOrCreateDriveFolder({
         name:
-          "EconLLS NIC Documents",
+          "Accounting With Udara NIC Documents",
       });
 
     console.log(
